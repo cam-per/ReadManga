@@ -1,0 +1,39 @@
+<?xml version="1.0" encoding="utf-8"?>
+<menu xmlns:android="http://schemas.android.com/apk/res/android">
+
+    <item android:title="Подборки">
+        <menu>
+        <item
+            android:id="@+id/nav_editorchoice"
+            android:title="@string/editor_choice_title" />
+        <item
+            android:id="@+id/nav_new"
+            android:title="@string/new_movie_title" />
+        <item
+            android:id="@+id/nav_best"
+            android:title="@string/best_movie_title" />
+        <item
+            android:id="@+id/nav_random"
+            android:title="@string/random_movie_title" />
+        <item
+            android:id="@+id/nav_genres"
+            android:title="@string/genres_title" />
+        </menu>
+    </item>
+
+    <item android:title="Мои фильмы">
+        <menu>
+            <item
+                android:id="@+id/nav_favourites"
+                android:title="Избранное" />
+            <item
+                android:id="@+id/nav_history"
+                android:title="История" />
+        </menu>
+    </item>
+
+    <item
+        android:id="@+id/nav_about"
+        android:title="О приложении" />
+
+</menu>
