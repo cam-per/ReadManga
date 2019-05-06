@@ -102,6 +102,6 @@
     <string name="action_favorite">Избранное</string>
 
     <string name="title_activity_manga_reader">MangaReaderActivity</string>
-    <string name="dummy_button">Dummy Button</string>
-    <string name="dummy_content">DUMMY\nCONTENT</string>
+    <string name="previousButtonText">\u003c-</string>
+    <string name="nextButtonText">\u003e-</string>
 </resources>

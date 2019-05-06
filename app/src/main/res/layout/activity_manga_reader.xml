@@ -8,6 +8,8 @@
     <!-- The primary full-screen view. This can be replaced with whatever view
          is needed to present your content, e.g. VideoView, SurfaceView,
          TextureView, etc. -->
+    <include layout="@layout/toolbar"/>
+
     <androidx.viewpager.widget.ViewPager
             android:layout_width="match_parent"
             android:layout_height="match_parent"
@@ -18,7 +20,7 @@
          android:fitsSystemWindows. -->
     <FrameLayout android:layout_width="match_parent"
                  android:layout_height="match_parent"
-                 android:fitsSystemWindows="true">
+                 android:fitsSystemWindows="true" android:id="@+id/frameLayout">
 
         <LinearLayout android:id="@+id/fullscreen_content_controls"
                       style="?metaButtonBarStyle"
@@ -28,14 +30,27 @@
                       android:background="@color/black_overlay"
                       android:orientation="horizontal"
                       tools:ignore="UselessParent">
-
-            <Button android:id="@+id/dummy_button"
-                    style="?metaButtonBarButtonStyle"
-                    android:layout_width="0dp"
+            <Button
+                    android:text="@string/previousButtonText"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content" android:id="@+id/buttonPrevious"
+                    android:onClick="slidePrevious" android:background="@android:color/transparent"
+                    android:layout_weight="1"/>
+            <EditText
+                    android:layout_width="37dp"
                     android:layout_height="wrap_content"
-                    android:layout_weight="1"
-                    android:text="@string/dummy_button"/>
-
+                    android:inputType="number"
+                    android:ems="10"
+                    android:id="@+id/currentPageText" android:layout_weight="@dimen/dp_10"/>
+            <TextView
+                    android:layout_width="39dp"
+                    android:layout_height="wrap_content" android:id="@+id/pageCount"/>
+            <Button
+                    android:text="@string/nextButtonText"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content" android:id="@+id/buttonNext"
+                    android:onClick="slideNext" android:background="@android:color/transparent"
+                    android:layout_weight="1"/>
         </LinearLayout>
     </FrameLayout>
 

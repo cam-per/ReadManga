@@ -1,23 +1,26 @@
 package ru.garretech.readmanga.activities
 
-import android.graphics.Bitmap
 import androidx.appcompat.app.AppCompatActivity
 import android.os.Bundle
 import android.os.Handler
-import android.view.MotionEvent
 import android.view.View
-import ru.garretech.readmanga.R
+import androidx.viewpager.widget.ViewPager
 import kotlinx.android.synthetic.main.activity_manga_reader.*
 import org.json.JSONArray
 import ru.garretech.readmanga.adapters.ImageScrollAdapter
-
+import ru.garretech.readmanga.interfaces.OnViewPagerClickListener
+import ru.garretech.readmanga.R
 
 /**
  * An example full-screen activity that shows and hides the system UI (i.e.
  * status bar and navigation/system bar) with user interaction.
  */
-class MangaReaderActivity : AppCompatActivity() {
-    val image: Bitmap? = null
+class MangaReaderActivity : AppCompatActivity(), OnViewPagerClickListener {
+
+    override fun onClick() {
+        toggle()
+    }
+
     private val mHideHandler = Handler()
     private val mHidePart2Runnable = Runnable {
         // Delayed removal of status and navigation bar
@@ -60,16 +63,29 @@ class MangaReaderActivity : AppCompatActivity() {
         val imageListString = intent.getStringExtra("imageList")
         val imageList = JSONArray(imageListString)
 
-
         mVisible = true
 
-        //mangaContentView.setOnClickListener { toggle() }
-
-
-        dummy_button.setOnTouchListener(mDelayHideTouchListener)
 
         val adapter = ImageScrollAdapter(this,imageList)
+        pageCount.text = imageList.length().toString()
+        updateCurrentPage(1)
+        adapter.setCustomOnClickListener(this)
         mangaContentView.adapter = adapter
+
+        mangaContentView.setOnPageChangeListener(object : ViewPager.OnPageChangeListener {
+            override fun onPageScrollStateChanged(state: Int) {
+
+            }
+
+            override fun onPageScrolled(position: Int, positionOffset: Float, positionOffsetPixels: Int) {
+                updateCurrentPage(position+1)
+            }
+
+            override fun onPageSelected(position: Int) {
+                TODO("not implemented") //To change body of created functions use File | Settings | File Templates.
+            }
+
+        })
 
     }
 
@@ -80,7 +96,7 @@ class MangaReaderActivity : AppCompatActivity() {
         delayedHide(100)
     }
 
-    public fun toggle(view: View) {
+    fun toggle() {
         if (mVisible) {
             hide()
         } else {
@@ -140,10 +156,24 @@ class MangaReaderActivity : AppCompatActivity() {
         private val UI_ANIMATION_DELAY = 300
     }
 
+    fun updateCurrentPage(value : Int) {
+        currentPageText.setText(value.toString())
+    }
+
     fun convertToDp(input: Int): Int {
         // Get the screen's density scale
         val scale = getResources().getDisplayMetrics().density;
         // Convert the dps to pixels, based on density scale
         return Math.ceil(input * scale.toDouble()).toInt()
+    }
+
+    fun slidePrevious(view: View) {
+        mangaContentView.setCurrentItem(mangaContentView.currentItem - 1,true)
+        updateCurrentPage(mangaContentView.currentItem+1)
+    }
+
+    fun slideNext(view: View) {
+        mangaContentView.setCurrentItem(mangaContentView.currentItem + 1,true)
+        updateCurrentPage(mangaContentView.currentItem+1)
     }
 }
