@@ -34,7 +34,13 @@ import ru.garretech.readmanga.models.Manga
 
 class MangaAboutActivity : AppCompatActivity(), MangaAboutFragment.OnFragmentInteractionListener, MangaSourcesFragment.OnFragmentInteractionListener {
 
-
+/*  * Переходим по ссылке http://readmanga.me/tower_of_god/vol3/6
+    * Считываем количество страниц из элемента с классом pages-count
+    * Берем первое фото из div с id=fotocontext. Содержимое аттрибута src из тега img
+    * http://e5.mangas.rocks/auto/30/35/40/TowerOfGod_s3_ch06_p01_SIU_Gemini.jpg_res.jpg?t=1556875730&u=0&h=i1nwNAGZO2AF_mAe3BzlHQ
+    * Подставляем вместо p01 номера с 1 по количество страниц. Полученный массив ссылок и будет текущий эпизоп манги
+    *
+    * */
 
     internal lateinit var mFragmentAdapter: MovieAboutPagerAdapter
     internal lateinit var mangaInfo: JSONObject
@@ -69,15 +75,6 @@ class MangaAboutActivity : AppCompatActivity(), MangaAboutFragment.OnFragmentInt
 
             mangaInfo = JSONObject(mangaInfoString!!)
 
-
-            /*
-            * Запросить наличие фильма в избранных (completable)
-            * Полученный результат хранится в переменной isFavorite, которая является observable
-            * При изменении значения данной переменной подписчик выполняет свои действия (меняется иконку избранного)
-            *
-            * Занесение фильма в избранное.
-            * Опять completable. С помощью него фильм заносится в БД.
-            * */
 
 
             this.title = mangaInfo.getString("title")

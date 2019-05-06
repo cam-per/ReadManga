@@ -7,10 +7,14 @@ import android.net.Uri
 import android.util.Log
 
 import io.reactivex.Observable
+import okhttp3.FormBody
+import okhttp3.OkHttpClient
+import okhttp3.Request
 
 import org.json.JSONArray
 import org.json.JSONException
 import org.json.JSONObject
+import org.jsoup.Jsoup
 import org.jsoup.nodes.Document
 import org.jsoup.nodes.Element
 import org.jsoup.select.Elements
@@ -91,15 +95,18 @@ class SiteWorker {
                     }
 
                     SEARCH_QUERY -> {
-
-                        val searchRequest = SearchRequest()
+                        val client = OkHttpClient()
 
                         uriQuery = standartUri
                         uriQuery!!.appendPath(path)
 
                         parameters!![OFFSET_PARAM] = currentOffset.toString()
 
-                        val pageContent = searchRequest.execute(uriQuery!!.toString(), parameters!!["q"], parameters!![OFFSET_PARAM]).get()
+                        val request = searchRequest(uriQuery!!.toString(), parameters!!["q"], parameters!![OFFSET_PARAM])
+
+                        val response = client.newCall(request).execute()
+
+                        val pageContent = Jsoup.parse(response.body()?.string())
 
                         if (queryAmount == -1)
                             queryAmount = getMaxSearchElementCount(pageContent)
@@ -176,13 +183,11 @@ class SiteWorker {
 
     companion object {
         val SITE_URL = "http://readmanga.me"
-        private val SITE_URL1 = "readmanga.me"
+        private val SITE_NAME = "readmanga.me"
         private val editorChoice = "row tiles-row short"
         val NEW_MOVIES_PARAMS = arrayOf("sortType", "created")
         val LIST_PREFIX = "list"
         val SEARCH_PREFIX = "search"
-        val ONGOING_PREFIX = "list/tags/ongoing"
-        val ONGOING_PARAMS = arrayOf("sortType", "rate")
         val RANDOM_MOVIE_PREFIX = "/internal/random"
         private val OFFSET_PARAM = "offset"
         val SIMPLE_QUERY = 0
@@ -298,6 +303,42 @@ class SiteWorker {
                 }
                 return genresList
             }
+
+        @Throws(InterruptedException::class, ExecutionException::class, NullPointerException::class)
+        fun getMangaImageList(link : String) : JSONArray {
+            /*  * Переходим по ссылке http://readmanga.me/tower_of_god/vol3/6
+            * Считываем количество страниц из элемента с классом pages-count
+            * Берем первое фото из div с id=fotocontext. Содержимое аттрибута src из тега img
+            * http://e5.mangas.rocks/auto/30/35/40/TowerOfGod_s3_ch06_p01_SIU_Gemini.jpg_res.jpg?t=1556875730&u=0&h=i1nwNAGZO2AF_mAe3BzlHQ
+            * Подставляем вместо p01 номера с 1 по количество страниц. Полученный массив ссылок и будет текущий эпизоп манги
+            *
+            * */
+            val pattern = Pattern.compile("rm_h\\.init\\(\\s(.*\\))")
+            var matcher : Matcher?
+            var resultAmount = ""
+            val pageDownloader = PageDownloader()
+            val pageContent: Document
+            val jsonArray by lazy {
+                if (resultAmount.isNotEmpty())
+                    JSONArray(resultAmount)
+                else
+                    JSONArray()}
+
+            pageContent = pageDownloader.execute(SITE_URL + link).get()
+
+            matcher = pattern.matcher(pageContent.toString())
+
+            if (matcher.find())
+                resultAmount = matcher.group(1)
+
+            resultAmount = resultAmount.substring(0,resultAmount.lastIndexOf("]")+1)
+
+            //val pageCount = pageContent.getElementsByClass("pages-count")?.first()?.text()
+            //var imageUrl = pageContent.getElementById("fotocontext").getElementsByTag("img").attr("src")
+            //imageUrl = imageUrl.substring(imageUrl.indexOf("?"))
+
+            return jsonArray
+        }
 
 
         private fun getMaxQueryElementCount(pageContent: Document): Int {
@@ -511,7 +552,7 @@ class SiteWorker {
                     val `object` = JSONObject()
                     `object`.put("name", element1.text())
                     var link = element1.attr("value")
-                    link = link.substring(link.lastIndexOf("/"))
+                    link = link.substring(URL.length)
                     `object`.put("link", link)
                     seriesList.put(index, `object`)
                     index++
@@ -534,7 +575,7 @@ class SiteWorker {
             get() {
                 val builder = Uri.Builder()
                 builder.scheme("http")
-                        .authority(SITE_URL1)
+                        .authority(SITE_NAME)
                 return builder
             }
 
@@ -576,6 +617,16 @@ class SiteWorker {
 
             return image
         }
+    }
+
+    @Throws(Exception::class)
+    fun searchRequest(vararg params : String?) : Request {
+        val body = FormBody.Builder()
+            .add("q",params[1]!!)
+            .add("offset",params[2]!!)
+            .build()
+
+        return Request.Builder().url(params[0]!!).post(body).build()
     }
 
 }

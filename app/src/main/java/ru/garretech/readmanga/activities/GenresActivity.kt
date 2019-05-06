@@ -23,15 +23,11 @@ import ru.garretech.readmanga.R
 
 class GenresActivity : AppCompatActivity() {
     private var genresArray: JSONArray? = null
-   /* @BindView(R.id.genresListView)
-    internal var genresListView: ListView? = null
-    @BindView(R.id.toolbarActionBar)
-    internal var toolbarActionBar: Toolbar? = null*/
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         setContentView(R.layout.activity_genres)
-        //ButterKnife.bind(this)
+
         title = getString(R.string.genres_title)
 
         if (toolbarActionBar != null) {

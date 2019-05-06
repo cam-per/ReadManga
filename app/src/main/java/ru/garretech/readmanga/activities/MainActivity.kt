@@ -8,15 +8,13 @@ import android.graphics.Bitmap
 import android.graphics.Rect
 import android.graphics.drawable.Drawable
 import android.net.ConnectivityManager
+import android.net.NetworkInfo
 import android.os.Build
 import android.os.Bundle
 import com.google.android.material.navigation.NavigationView
 import androidx.core.view.GravityCompat
-import androidx.swiperefreshlayout.widget.SwipeRefreshLayout
 import androidx.appcompat.app.ActionBarDrawerToggle
 import androidx.appcompat.app.AppCompatActivity
-import androidx.recyclerview.widget.LinearLayoutManager
-import androidx.recyclerview.widget.RecyclerView
 import androidx.appcompat.widget.SearchView
 import android.util.Log
 import android.view.Menu
@@ -24,6 +22,7 @@ import android.view.MenuItem
 import android.view.View
 import android.widget.RelativeLayout
 import android.widget.Toast
+import androidx.swiperefreshlayout.widget.SwipeRefreshLayout
 
 import com.chad.library.adapter.base.BaseQuickAdapter
 
@@ -54,7 +53,7 @@ import ru.garretech.readmanga.models.Manga
 import ru.garretech.readmanga.tools.ImageDownloader
 import ru.garretech.readmanga.tools.SiteWorker
 
-class MainActivity : AppCompatActivity(), BaseQuickAdapter.OnItemClickListener, MenuItem.OnActionExpandListener, NavigationView.OnNavigationItemSelectedListener, BaseQuickAdapter.RequestLoadMoreListener, androidx.swiperefreshlayout.widget.SwipeRefreshLayout.OnRefreshListener {
+class MainActivity : AppCompatActivity(), BaseQuickAdapter.OnItemClickListener, MenuItem.OnActionExpandListener, NavigationView.OnNavigationItemSelectedListener, BaseQuickAdapter.RequestLoadMoreListener, SwipeRefreshLayout.OnRefreshListener {
 
     private var searchView: SearchView? = null
     private var newMangaAdapter: RecyclerAdapter? = null
@@ -171,8 +170,6 @@ class MainActivity : AppCompatActivity(), BaseQuickAdapter.OnItemClickListener, 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
 
-        //val crashlyticsKit = Crashlytics.Builder().core(CrashlyticsCore.Builder().disabled(BuildConfig.DEBUG).build()).build()
-        //if (BuildConfig.DEBUG) Fabric.with(this, crashlyticsKit)
         setContentView(R.layout.activity_main)
         mSiteWorker = SiteWorker()
         appDataSource = AppDataSource(applicationContext)
@@ -693,12 +690,12 @@ class MainActivity : AppCompatActivity(), BaseQuickAdapter.OnItemClickListener, 
                 }
             }
             ACTIVITY_STATE.FAVORITES -> {
-                /*8activityState = ACTIVITY_STATE.FAVORITES
+                activityState = ACTIVITY_STATE.FAVORITES
                 Completable.fromCallable {
                     observable = appDataSource!!.listOfFavorites
                     null
                 }.subscribeOn(Schedulers.io())
-                        .subscribe(getListMangasObserver!!)*/
+                        .subscribe(getListMangasObserver!!)
             }
         }
     }
@@ -723,8 +720,7 @@ class MainActivity : AppCompatActivity(), BaseQuickAdapter.OnItemClickListener, 
     }
 
     internal fun hasConnection(): Boolean {
-        //return conMgr!!.getNetworkInfo(ConnectivityManager.TYPE_MOBILE).state == NetworkInfo.State.CONNECTED || conMgr!!.getNetworkInfo(ConnectivityManager.TYPE_WIFI).state == NetworkInfo.State.CONNECTED
-        return true
+        return conMgr!!.getNetworkInfo(ConnectivityManager.TYPE_MOBILE).state == NetworkInfo.State.CONNECTED || conMgr!!.getNetworkInfo(ConnectivityManager.TYPE_WIFI).state == NetworkInfo.State.CONNECTED
     }
 
 

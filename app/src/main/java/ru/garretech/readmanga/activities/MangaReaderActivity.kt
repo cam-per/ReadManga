@@ -1,17 +1,23 @@
 package ru.garretech.readmanga.activities
 
+import android.graphics.Bitmap
 import androidx.appcompat.app.AppCompatActivity
 import android.os.Bundle
 import android.os.Handler
+import android.view.MotionEvent
 import android.view.View
 import ru.garretech.readmanga.R
 import kotlinx.android.synthetic.main.activity_manga_reader.*
+import org.json.JSONArray
+import ru.garretech.readmanga.adapters.ImageScrollAdapter
+
 
 /**
  * An example full-screen activity that shows and hides the system UI (i.e.
  * status bar and navigation/system bar) with user interaction.
  */
 class MangaReaderActivity : AppCompatActivity() {
+    val image: Bitmap? = null
     private val mHideHandler = Handler()
     private val mHidePart2Runnable = Runnable {
         // Delayed removal of status and navigation bar
@@ -51,28 +57,30 @@ class MangaReaderActivity : AppCompatActivity() {
 
         setContentView(R.layout.activity_manga_reader)
         supportActionBar?.setDisplayHomeAsUpEnabled(true)
+        val imageListString = intent.getStringExtra("imageList")
+        val imageList = JSONArray(imageListString)
+
 
         mVisible = true
 
-        // Set up the user interaction to manually show or hide the system UI.
-        mangaContentView.setOnClickListener { toggle() }
+        //mangaContentView.setOnClickListener { toggle() }
 
-        // Upon interacting with UI controls, delay any scheduled hide()
-        // operations to prevent the jarring behavior of controls going away
-        // while interacting with the UI.
+
         dummy_button.setOnTouchListener(mDelayHideTouchListener)
+
+        val adapter = ImageScrollAdapter(this,imageList)
+        mangaContentView.adapter = adapter
+
     }
+
 
     override fun onPostCreate(savedInstanceState: Bundle?) {
         super.onPostCreate(savedInstanceState)
 
-        // Trigger the initial hide() shortly after the activity has been
-        // created, to briefly hint to the user that UI controls
-        // are available.
         delayedHide(100)
     }
 
-    private fun toggle() {
+    public fun toggle(view: View) {
         if (mVisible) {
             hide()
         } else {
@@ -130,5 +138,12 @@ class MangaReaderActivity : AppCompatActivity() {
          * and a change of the status and navigation bar.
          */
         private val UI_ANIMATION_DELAY = 300
+    }
+
+    fun convertToDp(input: Int): Int {
+        // Get the screen's density scale
+        val scale = getResources().getDisplayMetrics().density;
+        // Convert the dps to pixels, based on density scale
+        return Math.ceil(input * scale.toDouble()).toInt()
     }
 }

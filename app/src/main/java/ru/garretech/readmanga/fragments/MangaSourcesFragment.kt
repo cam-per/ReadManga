@@ -6,7 +6,6 @@ import android.net.ConnectivityManager
 import android.net.Uri
 import android.os.Bundle
 import android.os.Handler
-import androidx.fragment.app.Fragment
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
@@ -23,16 +22,16 @@ import ru.garretech.readmanga.R
 import ru.garretech.readmanga.activities.MangaReaderActivity
 
 import java.util.ArrayList
-import java.util.concurrent.ExecutionException
 
 import ru.garretech.readmanga.tools.SiteWorker
+import java.util.EnumSet.range
 
 
 class MangaSourcesFragment : androidx.fragment.app.Fragment() {
 
     // TODO: Rename and change types of parameters
     private var arrayAdapter: ArrayAdapter<String>? = null
-    internal lateinit var seriesList: JSONArray
+    internal lateinit var episodesList: JSONArray
     internal lateinit var listViewList: ArrayList<String>
     internal lateinit var listView: ListView
     internal lateinit var sourcesArray: JSONArray
@@ -40,24 +39,42 @@ class MangaSourcesFragment : androidx.fragment.app.Fragment() {
     internal lateinit var URL: String
     private var episodeSelected: Boolean = false
     internal lateinit var progressBottomSheet: ProgressBottomSheet
-    internal lateinit var initialSeries: String
+    internal lateinit var initialEpisode: String
     internal var empty: Boolean = false
+
+    /*  * Переходим по ссылке http://readmanga.me/tower_of_god/vol3/6
+    * Считываем количество страниц из элемента с классом pages-count
+    * Берем первое фото из div с id=fotocontext. Содержимое аттрибута src из тега img
+    * http://e5.mangas.rocks/auto/30/35/40/TowerOfGod_s3_ch06_p01_SIU_Gemini.jpg_res.jpg?t=1556875730&u=0&h=i1nwNAGZO2AF_mAe3BzlHQ
+    * Подставляем вместо p01 номера с 1 по количество страниц. Полученный массив ссылок и будет текущий эпизоп манги
+    *
+    * */
 
     private var conMgr: ConnectivityManager? = null
     private var bag : CompositeDisposable = CompositeDisposable()
     val adapterClickListener = AdapterView.OnItemClickListener { _, _, i, _ ->
-        if (hasConnection()) {
-            if (!episodeSelected) {
-                if (!progressBottomSheet.isAdded) {
-                    progressBottomSheet.show(fragmentManager!!, "progressBar")
-                }
-                val intent = Intent(activity,MangaReaderActivity::class.java)
-                startActivity(intent)
 
-            }
-        } else {
-            showConnectionError()
+        if (!progressBottomSheet.isAdded) {
+            progressBottomSheet.show(fragmentManager!!, "progressBar")
         }
+        Handler().postDelayed({
+        val imageJsonArray = SiteWorker.getMangaImageList(URL + (episodesList.get(i) as JSONObject).getString("link"))
+        val imageListJson = JSONArray()
+
+        for (index in 0..(imageJsonArray.length()-1)) {
+            val jsonTemp = imageJsonArray.getJSONArray(index)
+            val link = jsonTemp.get(1).toString()+jsonTemp.get(2).toString()
+
+            imageListJson.put(link)
+        }
+
+        if (progressBottomSheet.isAdded && progressBottomSheet.isVisible)
+            progressBottomSheet.dismissAllowingStateLoss()
+
+        val intent = Intent(activity,MangaReaderActivity::class.java)
+        intent.putExtra("imageList",imageListJson.toString())
+        startActivity(intent)
+        },100)
     }
 
     private var mListener: OnFragmentInteractionListener? = null
@@ -71,17 +88,17 @@ class MangaSourcesFragment : androidx.fragment.app.Fragment() {
                 conMgr = activity!!.getSystemService(Context.CONNECTIVITY_SERVICE) as ConnectivityManager
                 sourcesInfo = JSONObject(arguments!!.getString(ARG_PARAM1))
                 URL = sourcesInfo.getString("url")
-                initialSeries = sourcesInfo.getString("initial_episode")
-                //seriesList = JSONArray()
-                seriesList = SiteWorker.formEpisodesList(URL, initialSeries)
-                listViewList = ArrayList<String>()
+                initialEpisode = sourcesInfo.getString("initial_episode")
+                //episodesList = JSONArray()
+                episodesList = SiteWorker.formEpisodesList(URL, initialEpisode)
+                listViewList = ArrayList()
 
-                if (seriesList.length() == 0) {
+                if (episodesList.length() == 0) {
                     listViewList.add("Пусто")
                     empty = true
                 } else {
-                    for (i in 0 until seriesList.length()) {
-                        listViewList.add((seriesList.get(i) as JSONObject).getString("name"))
+                    for (i in 0 until episodesList.length()) {
+                        listViewList.add((episodesList.get(i) as JSONObject).getString("name"))
                     }
                 }
 
