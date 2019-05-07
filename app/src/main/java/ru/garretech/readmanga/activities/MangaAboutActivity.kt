@@ -4,7 +4,6 @@ import android.content.Intent
 import android.net.Uri
 import com.google.android.material.tabs.TabLayout
 import androidx.appcompat.app.AppCompatActivity
-import androidx.viewpager.widget.ViewPager
 import android.os.Bundle
 import android.util.Log
 import android.view.Menu
@@ -48,12 +47,12 @@ class MangaAboutActivity : AppCompatActivity(), MangaAboutFragment.OnFragmentInt
     internal lateinit var age: String
     internal lateinit var genres: String
     internal lateinit var production: String
-    internal lateinit var episodesNumber: String
+    internal lateinit var chaptersNumber: String
     internal lateinit var duration: String
     internal lateinit var description: String
     internal lateinit var imageURL: String
     internal lateinit var mangaURL: String
-    internal lateinit var initialEpisode: String
+    internal lateinit var lastChapter: String
     internal lateinit var currentManga: Manga
     internal lateinit var dataSource: AppDataSource
     internal var isFavorite: Boolean = false
@@ -83,9 +82,9 @@ class MangaAboutActivity : AppCompatActivity(), MangaAboutFragment.OnFragmentInt
             this.mangaURL = mangaInfo.getString("url")
             this.age = mangaInfo.getString("age")
             this.description = mangaInfo.getString("description")
-            this.initialEpisode = mangaInfo.getString("initial_episode")
+            this.lastChapter = mangaInfo.getString("last_chapter")
             this.production = mangaInfo.getString("production")
-            this.episodesNumber = mangaInfo.getString("episodes_number")
+            this.chaptersNumber = mangaInfo.getString("chapters_number")
             this.duration = mangaInfo.getString("duration")
 
             val bundle = intent.getBundleExtra("bundle")
@@ -95,9 +94,9 @@ class MangaAboutActivity : AppCompatActivity(), MangaAboutFragment.OnFragmentInt
                 currentManga = Manga(title, Arrays.asList(*genres.split(",".toRegex()).dropLastWhile({ it.isEmpty() }).toTypedArray()), imageURL, mangaURL)
                 currentManga.productionYear = age
                 currentManga.description = description
-                currentManga.initialEpisode = initialEpisode
+                currentManga.lastChapter = lastChapter
                 currentManga.productionCountry = production
-                currentManga.episodesNumber = episodesNumber
+                currentManga.chaptersNumber = chaptersNumber
                 currentManga.duration = duration
             }
 
@@ -123,7 +122,7 @@ class MangaAboutActivity : AppCompatActivity(), MangaAboutFragment.OnFragmentInt
         try {
             val sourcesInfo = JSONObject()
             sourcesInfo.put("url", mangaURL)
-            sourcesInfo.put("initial_episode", initialEpisode)
+            sourcesInfo.put("last_chapter", lastChapter)
             mFragmentAdapter.addFragment(MangaAboutFragment.newInstance(mangaInfo), "О манге")
             mFragmentAdapter.addFragment(MangaSourcesFragment.newInstance(sourcesInfo), "Эпизоды")
             viewPager.adapter = mFragmentAdapter

@@ -103,5 +103,5 @@
 
     <string name="title_activity_manga_reader">MangaReaderActivity</string>
     <string name="previousButtonText">\u003c-</string>
-    <string name="nextButtonText">\u003e-</string>
+    <string name="nextButtonText">-\u003e</string>
 </resources>

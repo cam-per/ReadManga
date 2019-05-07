@@ -28,19 +28,30 @@ class ImageScrollAdapter(context : Context, imageList: JSONArray) : PagerAdapter
     }
 
     override fun instantiateItem(container: ViewGroup, position: Int): Any {
+        val imageView = BigImageView(mContext)
 
         if (container.getChildAt(position) == null) {
-            val imageView = BigImageView(mContext)
-            imageView.showImage(Uri.parse(mImageList.get(position).toString()))
-            container.addView(imageView, position)
+            if (position > container.childCount) {
+                for (index in container.childCount..position) {
+                    imageView.showImage(Uri.parse(mImageList.get(index).toString()))
+                    container.addView(imageView, index)
+                    imageView.setOnClickListener {
+                        onViewPagerClickListener.onClick()
+                    }
+                }
+            } else {
+                imageView.showImage(Uri.parse(mImageList.get(position).toString()))
+                container.addView(imageView, position)
 
-            imageView.setOnClickListener {
-                onViewPagerClickListener.onClick()
+                imageView.setOnClickListener {
+                    onViewPagerClickListener.onClick()
+                }
+
             }
-
-            return imageView
-        } else
             return container.getChildAt(position)
+        } else {
+            return container.getChildAt(position)
+        }
     }
 
     override fun destroyItem(container: ViewGroup, position: Int, `object`: Any) {

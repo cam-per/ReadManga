@@ -1,11 +1,14 @@
 package ru.garretech.readmanga.activities
 
+import android.os.Build
 import androidx.appcompat.app.AppCompatActivity
 import android.os.Bundle
 import android.os.Handler
+import android.view.KeyEvent
 import android.view.View
 import androidx.viewpager.widget.ViewPager
 import kotlinx.android.synthetic.main.activity_manga_reader.*
+import kotlinx.android.synthetic.main.toolbar.*
 import org.json.JSONArray
 import ru.garretech.readmanga.adapters.ImageScrollAdapter
 import ru.garretech.readmanga.interfaces.OnViewPagerClickListener
@@ -23,11 +26,7 @@ class MangaReaderActivity : AppCompatActivity(), OnViewPagerClickListener {
 
     private val mHideHandler = Handler()
     private val mHidePart2Runnable = Runnable {
-        // Delayed removal of status and navigation bar
 
-        // Note that some of these constants are new as of API 16 (Jelly Bean)
-        // and API 19 (KitKat). It is safe to use them, as they are inlined
-        // at compile-time and do nothing on earlier devices.
         mangaContentView.systemUiVisibility =
             View.SYSTEM_UI_FLAG_LOW_PROFILE or
                     View.SYSTEM_UI_FLAG_FULLSCREEN or
@@ -43,11 +42,7 @@ class MangaReaderActivity : AppCompatActivity(), OnViewPagerClickListener {
     }
     private var mVisible: Boolean = false
     private val mHideRunnable = Runnable { hide() }
-    /**
-     * Touch listener to use for in-layout UI controls to delay hiding the
-     * system UI. This is to prevent the jarring behavior of controls going away
-     * while interacting with activity UI.
-     */
+
     private val mDelayHideTouchListener = View.OnTouchListener { _, _ ->
         if (AUTO_HIDE) {
             delayedHide(AUTO_HIDE_DELAY_MILLIS)
@@ -59,8 +54,15 @@ class MangaReaderActivity : AppCompatActivity(), OnViewPagerClickListener {
         super.onCreate(savedInstanceState)
 
         setContentView(R.layout.activity_manga_reader)
+        setSupportActionBar(mangaReaderToolbar)
         supportActionBar?.setDisplayHomeAsUpEnabled(true)
+
+        //if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.LOLLIPOP)
+        //    supportActionBar?.setBackgroundDrawable(getDrawable(R.color.black_overlay))
+
         val imageListString = intent.getStringExtra("imageList")
+        val chapterName = intent.getStringExtra("chapterName")
+        setTitle(chapterName)
         val imageList = JSONArray(imageListString)
 
         mVisible = true
@@ -82,13 +84,32 @@ class MangaReaderActivity : AppCompatActivity(), OnViewPagerClickListener {
             }
 
             override fun onPageSelected(position: Int) {
-                TODO("not implemented") //To change body of created functions use File | Settings | File Templates.
+
             }
 
         })
 
+        currentPageText.setOnEditorActionListener { v, actionId, event ->
+            when(actionId) {
+                KeyEvent.KEYCODE_ENDCALL -> {
+                    var value = currentPageText.text.toString().toInt() - 1
+
+                    if (value > imageList.length())
+                        value = imageList.length()
+
+                    mangaContentView.setCurrentItem(value,true)
+                    true
+                }
+                else -> false
+            }
+        }
+
     }
 
+    override fun onSupportNavigateUp(): Boolean {
+        onBackPressed()
+        return true
+    }
 
     override fun onPostCreate(savedInstanceState: Bundle?) {
         super.onPostCreate(savedInstanceState)
@@ -127,32 +148,17 @@ class MangaReaderActivity : AppCompatActivity(), OnViewPagerClickListener {
         mHideHandler.postDelayed(mShowPart2Runnable, UI_ANIMATION_DELAY.toLong())
     }
 
-    /**
-     * Schedules a call to hide() in [delayMillis], canceling any
-     * previously scheduled calls.
-     */
     private fun delayedHide(delayMillis: Int) {
         mHideHandler.removeCallbacks(mHideRunnable)
         mHideHandler.postDelayed(mHideRunnable, delayMillis.toLong())
     }
 
     companion object {
-        /**
-         * Whether or not the system UI should be auto-hidden after
-         * [AUTO_HIDE_DELAY_MILLIS] milliseconds.
-         */
+
         private val AUTO_HIDE = true
 
-        /**
-         * If [AUTO_HIDE] is set, the number of milliseconds to wait after
-         * user interaction before hiding the system UI.
-         */
         private val AUTO_HIDE_DELAY_MILLIS = 3000
 
-        /**
-         * Some older devices needs a small delay between UI widget updates
-         * and a change of the status and navigation bar.
-         */
         private val UI_ANIMATION_DELAY = 300
     }
 
@@ -160,12 +166,6 @@ class MangaReaderActivity : AppCompatActivity(), OnViewPagerClickListener {
         currentPageText.setText(value.toString())
     }
 
-    fun convertToDp(input: Int): Int {
-        // Get the screen's density scale
-        val scale = getResources().getDisplayMetrics().density;
-        // Convert the dps to pixels, based on density scale
-        return Math.ceil(input * scale.toDouble()).toInt()
-    }
 
     fun slidePrevious(view: View) {
         mangaContentView.setCurrentItem(mangaContentView.currentItem - 1,true)

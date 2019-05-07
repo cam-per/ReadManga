@@ -5,7 +5,6 @@ import android.content.Context
 import android.graphics.Bitmap
 import android.net.Uri
 import android.os.Bundle
-import androidx.fragment.app.Fragment
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
@@ -29,7 +28,7 @@ class MangaAboutFragment : androidx.fragment.app.Fragment() {
 
 
     private val mangaAge: String by lazy { arguments!!.getString(ARG_PARAM6)}
-    private val movieTitle: String by lazy { arguments!!.getString(ARG_PARAM1) }
+    private val mangaTitle: String by lazy { arguments!!.getString(ARG_PARAM1) }
     private val mangaGenres: String by lazy { arguments!!.getString(ARG_PARAM2) }
     private val mangaProduction: String by lazy { arguments!!.getString(ARG_PARAM3) }
     private val mangaSeriesNumber: String by lazy { arguments!!.getString(ARG_PARAM4) }
@@ -45,7 +44,7 @@ class MangaAboutFragment : androidx.fragment.app.Fragment() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         if (arguments != null) {
-            /*movieTitle = arguments!!.getString(ARG_PARAM1)
+            /*mangaTitle = arguments!!.getString(ARG_PARAM1)
             mangaGenres = arguments!!.getString(ARG_PARAM2)
             mangaProduction = arguments!!.getString(ARG_PARAM3)
             mangaSeriesNumber = arguments!!.getString(ARG_PARAM4)
@@ -80,14 +79,14 @@ class MangaAboutFragment : androidx.fragment.app.Fragment() {
         val mangaAgeView = view.findViewById<TextView>(R.id.movie_age_text)
         val mangaGenresView = view.findViewById<TextView>(R.id.movie_genres_text)
         val mangaProductionCountryView = view.findViewById<TextView>(R.id.movie_production_country_text)
-        val mangaSeriesNumberView = view.findViewById<TextView>(R.id.movie_series_number_text)
+        val mangaChaptersNumberView = view.findViewById<TextView>(R.id.movie_series_number_text)
         val mangaDurationView = view.findViewById<TextView>(R.id.movie_duration_text)
         val imageView = view.findViewById<ImageView>(R.id.movie_image_about)
         val mangaDescriptionView = view.findViewById<TextView>(R.id.movie_description_text)
 
         mangaGenresView.text = getString(R.string.genres_description) + " " + mangaGenres!!
         mangaProductionCountryView.text = getString(R.string.production_country_description)  + " " +  mangaProduction!!
-        mangaSeriesNumberView.text = mangaSeriesNumber
+        mangaChaptersNumberView.text = mangaSeriesNumber
         mangaDurationView.text = mangaDuration
         mangaAgeView.text = getString(R.string.age_description)  + " " +  mangaAge!!
         mangaDescriptionView.text = mangaDescription
@@ -138,7 +137,7 @@ class MangaAboutFragment : androidx.fragment.app.Fragment() {
         private val ARG_PARAM1 = "title"
         private val ARG_PARAM2 = "genres"
         private val ARG_PARAM3 = "production"
-        private val ARG_PARAM4 = "episodes_number"
+        private val ARG_PARAM4 = "chaptes_number"
         private val ARG_PARAM5 = "duration"
         private val ARG_PARAM6 = "age"
         private val ARG_PARAM7 = "description"
@@ -160,7 +159,7 @@ class MangaAboutFragment : androidx.fragment.app.Fragment() {
             args.putString(ARG_PARAM1, movieInfo.getString("title"))
             args.putString(ARG_PARAM2, movieInfo.getString("genres"))
             args.putString(ARG_PARAM3, movieInfo.getString("production"))
-            args.putString(ARG_PARAM4, movieInfo.getString("episodes_number"))
+            args.putString(ARG_PARAM4, movieInfo.getString("chapters_number"))
             args.putString(ARG_PARAM5, movieInfo.getString("duration"))
             args.putString(ARG_PARAM6, movieInfo.getString("age"))
             args.putString(ARG_PARAM7, movieInfo.getString("description"))

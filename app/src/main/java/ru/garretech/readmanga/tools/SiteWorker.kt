@@ -403,9 +403,9 @@ class SiteWorker {
                 url = url.substring(url.lastIndexOf("/"))
             }
 
-            var initialEpisode = pageContent.getElementsByClass("subject-actions col-sm-7").first().getElementsByTag("a").last().attr("href")
-            //initialEpisode = initialEpisode.substring(initialEpisode.lastIndexOf("/"))
-            initialEpisode = initialEpisode.substring(url.length)
+            var lastChapter = pageContent.getElementsByClass("subject-actions col-sm-7").first().getElementsByTag("a").last().attr("href")
+            //lastChapter = lastChapter.substring(lastChapter.lastIndexOf("/"))
+            lastChapter = lastChapter.substring(url.length)
 
             tempElement = pageContent.getElementsByClass("name").first()
             if (tempElement != null)
@@ -445,7 +445,7 @@ class SiteWorker {
             tempElements = tempElement!!.getElementsByTag("p")
 
             tempElement = tempElements[0]
-            val episodesNumber = tempElement!!.text()
+            val chaptersNumber = tempElement!!.text()
 
             tempElement = tempElements[1]
             val duration = tempElement!!.text()
@@ -455,9 +455,9 @@ class SiteWorker {
             info.put("url", url)
             info.put("genres", genres.toString())
             info.put("image_url", image_url)
-            info.put("initial_episode", initialEpisode)
+            info.put("last_chapter", lastChapter)
             info.put("production", production)
-            info.put("episodes_number", episodesNumber)
+            info.put("chapters_number", chaptersNumber)
             info.put("duration", duration)
             info.put("description", description)
             info.put("age", age)
@@ -535,16 +535,16 @@ class SiteWorker {
         }
 
 
-        fun formEpisodesList(URL: String, initialSeries: String): JSONArray {
-            val seriesList = JSONArray()
+        fun formChaptersList(URL: String, lastChapter: String): JSONArray {
+            val chaptersList = JSONArray()
             val ADULT_PREFIX = "?mtr=1"
             val pageDownloader = PageDownloader()
             val pageContent: Document
             try {
-                if (initialSeries == "/") {
-                    return seriesList
+                if (lastChapter == "/") {
+                    return chaptersList
                 }
-                pageContent = pageDownloader.execute(SITE_URL + URL + initialSeries + ADULT_PREFIX).get()
+                pageContent = pageDownloader.execute(SITE_URL + URL + lastChapter + ADULT_PREFIX).get()
                 val element = pageContent.getElementById("chapterSelectorSelect")
                 val elements = element.getElementsByTag("option")
                 var index = 0
@@ -554,7 +554,7 @@ class SiteWorker {
                     var link = element1.attr("value")
                     link = link.substring(URL.length)
                     `object`.put("link", link)
-                    seriesList.put(index, `object`)
+                    chaptersList.put(index, `object`)
                     index++
                 }
 
@@ -568,7 +568,7 @@ class SiteWorker {
                 e.printStackTrace()
             }
 
-            return seriesList
+            return chaptersList
         }
 
         val standartUri: Uri.Builder

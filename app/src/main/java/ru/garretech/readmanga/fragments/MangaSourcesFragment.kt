@@ -24,7 +24,6 @@ import ru.garretech.readmanga.activities.MangaReaderActivity
 import java.util.ArrayList
 
 import ru.garretech.readmanga.tools.SiteWorker
-import java.util.EnumSet.range
 
 
 class MangaSourcesFragment : androidx.fragment.app.Fragment() {
@@ -34,12 +33,10 @@ class MangaSourcesFragment : androidx.fragment.app.Fragment() {
     internal lateinit var episodesList: JSONArray
     internal lateinit var listViewList: ArrayList<String>
     internal lateinit var listView: ListView
-    internal lateinit var sourcesArray: JSONArray
     internal lateinit var sourcesInfo: JSONObject
     internal lateinit var URL: String
-    private var episodeSelected: Boolean = false
     internal lateinit var progressBottomSheet: ProgressBottomSheet
-    internal lateinit var initialEpisode: String
+    internal lateinit var lastChapter: String
     internal var empty: Boolean = false
 
     /*  * Переходим по ссылке http://readmanga.me/tower_of_god/vol3/6
@@ -72,6 +69,7 @@ class MangaSourcesFragment : androidx.fragment.app.Fragment() {
             progressBottomSheet.dismissAllowingStateLoss()
 
         val intent = Intent(activity,MangaReaderActivity::class.java)
+            intent.putExtra("chapterName",(episodesList.get(i) as JSONObject).getString("name"))
         intent.putExtra("imageList",imageListJson.toString())
         startActivity(intent)
         },100)
@@ -88,9 +86,9 @@ class MangaSourcesFragment : androidx.fragment.app.Fragment() {
                 conMgr = activity!!.getSystemService(Context.CONNECTIVITY_SERVICE) as ConnectivityManager
                 sourcesInfo = JSONObject(arguments!!.getString(ARG_PARAM1))
                 URL = sourcesInfo.getString("url")
-                initialEpisode = sourcesInfo.getString("initial_episode")
+                lastChapter = sourcesInfo.getString("last_chapter")
                 //episodesList = JSONArray()
-                episodesList = SiteWorker.formEpisodesList(URL, initialEpisode)
+                episodesList = SiteWorker.formChaptersList(URL, lastChapter)
                 listViewList = ArrayList()
 
                 if (episodesList.length() == 0) {

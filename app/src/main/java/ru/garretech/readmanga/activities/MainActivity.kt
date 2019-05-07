@@ -22,6 +22,7 @@ import android.view.MenuItem
 import android.view.View
 import android.widget.RelativeLayout
 import android.widget.Toast
+import androidx.recyclerview.widget.GridLayoutManager
 import androidx.swiperefreshlayout.widget.SwipeRefreshLayout
 
 import com.chad.library.adapter.base.BaseQuickAdapter
@@ -56,7 +57,7 @@ import ru.garretech.readmanga.tools.SiteWorker
 class MainActivity : AppCompatActivity(), BaseQuickAdapter.OnItemClickListener, MenuItem.OnActionExpandListener, NavigationView.OnNavigationItemSelectedListener, BaseQuickAdapter.RequestLoadMoreListener, SwipeRefreshLayout.OnRefreshListener {
 
     private var searchView: SearchView? = null
-    private var newMangaAdapter: RecyclerAdapter? = null
+    private var mangaAdapter: RecyclerAdapter? = null
     private lateinit var progressBottomSheet : ProgressBottomSheet
     private var conMgr: ConnectivityManager? = null
     private var mSiteWorker: SiteWorker? = null
@@ -137,8 +138,8 @@ class MainActivity : AppCompatActivity(), BaseQuickAdapter.OnItemClickListener, 
 
     private val onLoadMoreConsumer by lazy {
         Consumer<List<Manga>> { movies ->
-            newMangaAdapter!!.addData(movies)
-            newMangaAdapter!!.loadMoreComplete()
+            mangaAdapter!!.addData(movies)
+            mangaAdapter!!.loadMoreComplete()
         }
     }
 
@@ -198,23 +199,26 @@ class MainActivity : AppCompatActivity(), BaseQuickAdapter.OnItemClickListener, 
         }
 
 
-        movieListRecyclerView!!.layoutManager = object : androidx.recyclerview.widget.LinearLayoutManager(this) {
+       /* movieListRecyclerView!!.layoutManager = object : androidx.recyclerview.widget.LinearLayoutManager(this) {
             override fun supportsPredictiveItemAnimations(): Boolean {
                 return false
             }
-        }
+        }*/
+
+        movieListRecyclerView!!.layoutManager = GridLayoutManager(this,3)
         movieListRecyclerView!!.setHasFixedSize(true)
 
         val toggle = ActionBarDrawerToggle(this, drawerLayout, toolbarActionBar, R.string.navigation_drawer_open, R.string.navigation_drawer_close)
         drawerLayout.addDrawerListener(toggle)
         toggle.syncState()
 
-        newMangaAdapter = RecyclerAdapter(R.layout.fragment_manga, ArrayList())
-        movieListRecyclerView!!.adapter = newMangaAdapter
-        newMangaAdapter!!.onItemClickListener = this
-        newMangaAdapter!!.setOnLoadMoreListener(this, movieListRecyclerView)
-        newMangaAdapter!!.setEnableLoadMore(false)
-        newMangaAdapter!!.setLoadMoreView(CustomLoadMoreView())
+        mangaAdapter = RecyclerAdapter(R.layout.fragment_manga_new, ArrayList())
+        //mangaAdapter = RecyclerAdapterNew(this,ArrayList())
+        movieListRecyclerView!!.adapter = mangaAdapter
+        mangaAdapter!!.onItemClickListener = this
+        mangaAdapter!!.setOnLoadMoreListener(this, movieListRecyclerView)
+        mangaAdapter!!.setEnableLoadMore(false)
+        mangaAdapter!!.setLoadMoreView(CustomLoadMoreView())
 
 
 
@@ -390,7 +394,7 @@ class MainActivity : AppCompatActivity(), BaseQuickAdapter.OnItemClickListener, 
 
                     title = getString(R.string.new_movie_title)
 
-                    //newMangaAdapter!!.clear()
+                    //mangaAdapter!!.clear()
                 } else
                     showConnectionError();
             }
@@ -420,7 +424,7 @@ class MainActivity : AppCompatActivity(), BaseQuickAdapter.OnItemClickListener, 
 
                     title = getString(R.string.best_movie_title)
 
-                    //newMangaAdapter!!.clear()
+                    //mangaAdapter!!.clear()
                 } else
                     showConnectionError();
             }
@@ -577,7 +581,7 @@ class MainActivity : AppCompatActivity(), BaseQuickAdapter.OnItemClickListener, 
 
 
     override fun onItemClick(adapter: BaseQuickAdapter<*, *>, view: View, position: Int) {
-        val selectedManga = newMangaAdapter!!.data[position]
+        val selectedManga = mangaAdapter!!.data[position]
         if (hasConnection()) {
 
             val jsonObject: JSONObject
@@ -590,9 +594,9 @@ class MainActivity : AppCompatActivity(), BaseQuickAdapter.OnItemClickListener, 
                     .subscribe( { json ->
                         val intent = Intent(this@MainActivity, MangaAboutActivity::class.java)
                         selectedManga.title = json.getString("title")
-                        selectedManga.initialEpisode = json.getString("initial_episode")
+                        selectedManga.lastChapter = json.getString("last_chapter")
                         selectedManga.productionCountry = json.getString("production")
-                        selectedManga.episodesNumber = json.getString("episodes_number")
+                        selectedManga.chaptersNumber = json.getString("chapters_number")
                         selectedManga.duration = json.getString("duration")
                         selectedManga.description = json.getString("description")
                         selectedManga.productionYear = json.getString("age")
@@ -619,44 +623,44 @@ class MainActivity : AppCompatActivity(), BaseQuickAdapter.OnItemClickListener, 
 
     override fun onLoadMoreRequested() {
         if (activityState == ACTIVITY_STATE.ONLINE) {
-            if (requestQuery != null) {
+             if (requestQuery != null) {
 
-                if (requestQuery!!.offset() >= requestQuery!!.queryAmount()) {
-                    newMangaAdapter!!.loadMoreComplete()
-                    newMangaAdapter!!.setEnableLoadMore(false)
-                } else {
-                    if (hasConnection()) {
+                 if (requestQuery!!.offset() >= requestQuery!!.queryAmount()) {
+                     mangaAdapter!!.loadMoreComplete()
+                     mangaAdapter!!.setEnableLoadMore(false)
+                 } else {
+                     if (hasConnection()) {
 
-                        Completable.fromCallable {
-                            try {
-                                observable = requestQuery!!.nextQuery
-                            } catch (e: InterruptedException) {
-                                e.printStackTrace()
-                            } catch (e: ExecutionException) {
-                                showConnectionError()
-                            } catch (e: NullPointerException) {
-                                showConnectionError()
-                            }
+                         Completable.fromCallable {
+                             try {
+                                 observable = requestQuery!!.nextQuery
+                             } catch (e: InterruptedException) {
+                                 e.printStackTrace()
+                             } catch (e: ExecutionException) {
+                                 showConnectionError()
+                             } catch (e: NullPointerException) {
+                                 showConnectionError()
+                             }
 
-                            null
-                        }.subscribeOn(Schedulers.io())
-                                .subscribe(getOnLoadMoreObserver!!)
+                             null
+                         }.subscribeOn(Schedulers.io())
+                                 .subscribe(getOnLoadMoreObserver!!)
 
-                    } else {
-                        //Get more data failed
-                        Toast.makeText(this@MainActivity, R.string.cant_connect_error, Toast.LENGTH_LONG).show()
-                        newMangaAdapter!!.loadMoreFail()
+                     } else {
+                         //Get more data failed
+                         Toast.makeText(this@MainActivity, R.string.cant_connect_error, Toast.LENGTH_LONG).show()
+                         mangaAdapter!!.loadMoreFail()
 
-                    }
-                }
-            } else {
-                if (newMangaAdapter!!.isLoading) newMangaAdapter!!.loadMoreComplete()
-                newMangaAdapter!!.setEnableLoadMore(false)
-            }
-        } else {
-            if (newMangaAdapter!!.isLoading) newMangaAdapter!!.loadMoreComplete()
-            newMangaAdapter!!.setEnableLoadMore(false)
-        }
+                     }
+                 }
+             } else {
+                 if (mangaAdapter!!.isLoading) mangaAdapter!!.loadMoreComplete()
+                 mangaAdapter!!.setEnableLoadMore(false)
+             }
+         } else {
+             if (mangaAdapter!!.isLoading) mangaAdapter!!.loadMoreComplete()
+             mangaAdapter!!.setEnableLoadMore(false)
+         }
     }
 
 
@@ -702,15 +706,15 @@ class MainActivity : AppCompatActivity(), BaseQuickAdapter.OnItemClickListener, 
 
     private fun updateDataList(list: List<Manga>) {
 
-        newMangaAdapter!!.addAll(list)
+        mangaAdapter!!.addAll(list)
         movieListRecyclerView!!.recycledViewPool.clear()
 
-        if (newMangaAdapter!!.data.size != 0)
+        if (mangaAdapter!!.data.size != 0)
             movieListRecyclerView!!.scrollToPosition(0)
 
         if (activityState == ACTIVITY_STATE.ONLINE) {
             if (requestQuery != null && requestQuery!!.offset() < requestQuery!!.queryAmount())
-                newMangaAdapter!!.setEnableLoadMore(true)
+                mangaAdapter!!.setEnableLoadMore(true)
         }
     }
 

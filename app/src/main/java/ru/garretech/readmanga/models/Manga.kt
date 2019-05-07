@@ -22,7 +22,7 @@ var genres: List<String>?, @field:ColumnInfo(name = "manga_image_url")
     var productionCountry: String? = null
 
     @ColumnInfo(name = "episodes_number")
-    var episodesNumber: String? = null
+    var chaptersNumber: String? = null
 
     var duration: String? = null
 
@@ -36,6 +36,6 @@ var genres: List<String>?, @field:ColumnInfo(name = "manga_image_url")
     var description: String? = null
 
     @ColumnInfo(name = "initial_episode")
-    var initialEpisode: String? = null
+    var lastChapter: String? = null
 
 }
