@@ -52,16 +52,7 @@ class GenresActivity : AppCompatActivity() {
                     text.setTextColor(resources.getColor(android.R.color.white))
                     return view
                 }
-            };
-
-           /* val arrayAdapter = object : ArrayAdapter(applicationContext, android.R.layout.simple_list_item_1, genresNameList) {
-                override fun getView(position: Int, convertView: View?, parent: ViewGroup): View {
-                    val view = super.getView(position, convertView, parent)
-                    val text = view.findViewById(android.R.id.text1)
-                    text.setTextColor(resources.getColor(android.R.color.white))
-                    return view
-                }
-            }*/
+            }
 
             genresListView.setAdapter(arrayAdapter)
             genresListView.onItemClickListener = AdapterView.OnItemClickListener { _, _, i, _ ->

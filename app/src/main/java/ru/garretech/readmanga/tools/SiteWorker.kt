@@ -5,6 +5,7 @@ import android.graphics.Bitmap
 import android.graphics.BitmapFactory
 import android.net.Uri
 import android.util.Log
+import com.chad.library.adapter.base.entity.MultiItemEntity
 
 import io.reactivex.Observable
 import okhttp3.FormBody
@@ -19,7 +20,9 @@ import org.jsoup.nodes.Document
 import org.jsoup.nodes.Element
 import org.jsoup.select.Elements
 import ru.garretech.readmanga.Settings
+import ru.garretech.readmanga.models.Chapter
 import ru.garretech.readmanga.models.Manga
+import ru.garretech.readmanga.models.Volume
 
 import java.io.ByteArrayOutputStream
 import java.io.File
@@ -162,6 +165,9 @@ class SiteWorker {
             parameters = HashMap()
         }
 
+        fun requestUri() : Uri.Builder? {
+            return uriQuery
+        }
 
         fun queryAmount(): Int {
             return queryAmount
@@ -465,6 +471,147 @@ class SiteWorker {
             return info
         }
 
+        @Throws(NullPointerException::class)
+        fun getSortingParams(uri: Uri) : JSONArray{
+            /*
+            * sortType = name,rate,votes,created,updated
+            (По алфавиту,по популярности,по рейтингу,новинки,по дате добавления)
+            filter = high_rate,single,mature,completed,translated,many_chapters,wait_upload
+            (Все,Высокий рейтинг,Полнометражка,Для взрослых,Завершенная,Переведено,Длинная,Ожидает загрузки)
+
+            Выбор жанра /genre/%жанр
+
+            Выбор страны /country/%страна : vetnam, hong_kong, indoneziia, china, malaiziia, north_korea, singapore, thailand, taiwan, philippines, south_korea, japan
+
+            Прочее /tags/%тэг : web, stopped, mini_drama, ongoing, omnibus, coming_soon
+
+            Рубрики : страна, жанр, прочее (/country/%страна, /genre/%жанр, /tags/%тэг)
+
+            Модификаторы : сортировка, фильтр (sortType, filter)
+
+            * Сам объект массив параметров с возможными значениями
+            * Один элемент содержит:
+            * sortingName =
+            * type = prefix, param
+            * key = /genre/, /tags/, /country/, sortType, filter
+            * values = { , , }
+            * translatedValues = { , , }
+            * */
+
+            var pageDownloader: PageDownloader
+            var pageContent: Document
+            var sortingContent : Element
+            var tempElements : Elements
+            val firstParamPattern = Pattern.compile("\\?(\\w+)=(\\w+)")
+            val secondParamPattern = Pattern.compile("\\&(\\w+)=(\\w+)")
+            val prefixPattern = Pattern.compile("\\/(\\w+)\\/(\\w+)\\?")
+
+
+
+            pageDownloader = PageDownloader()
+            pageContent = pageDownloader.execute(uri.toString()).get()
+
+            if (pageContent == null) {
+                throw NullPointerException()
+            }
+
+            sortingContent = pageContent.getElementsByClass("rightContent").first()
+            // Формируем список возможных параметров (список хранится в теге ul)
+            tempElements = sortingContent.getElementsByTag("ul")
+
+            var index = 0
+            val sortingVarJsonArray = JSONArray()
+            val selectedOptionsJsonArray = JSONArray()
+            for (element in tempElements) {
+                val jsonObject = JSONObject()
+                val loopElements = element.getElementsByTag("li")
+                val selectedElements = element.getElementsByClass("listSelected")
+                var name : String
+
+                // Собираем основную информацию для json объекта
+                /* sortingName =
+                * type = prefix, param
+                * isSelected
+                * key = /genre/, /tags/, /country/, sortType, filter
+                * */
+
+                val element1 = loopElements.last().getElementsByTag("a")
+                val link = element1.attr("href")
+                var matcher : Matcher
+
+                name = when (index)  {
+                    0 -> "Сортировка"
+                    1 -> "Фильтр"
+                    2 -> "Жанры"
+                    3 -> "Страны"
+                    4 -> "Прочее"
+                    else -> ""
+                }
+
+                matcher = when(index) {
+                    0 -> firstParamPattern.matcher(link)
+                    1 -> secondParamPattern.matcher(link)
+                    2,3,4 -> prefixPattern.matcher(link)
+                    else -> firstParamPattern.matcher(link)
+                }
+
+
+                if (matcher.find()) {
+                    jsonObject.put("sortingName", name)
+
+                    if (index < 2)
+                        jsonObject.put("type", "param")
+                    else
+                        jsonObject.put("type", "prefix")
+
+                    jsonObject.put("key", matcher.group(1))
+
+                    val valuesArray = JSONArray()
+                    val translatedValuesArray = JSONArray()
+                    var position = 0
+                    var selectedPosition : Int = -1
+
+                    for (liElement in loopElements) {
+                        val element1 = liElement.getElementsByTag("a")
+                        val link = element1.attr("href")
+                        val translatedValue = element1.text()
+                        var matcherInternalLoop: Matcher
+
+                        if (liElement.toString().contains("listSelected")) {
+                            selectedPosition = position
+                        }
+
+                        if (liElement.toString().contains("Все")) {
+                            valuesArray.put("")
+                            translatedValuesArray.put("Все")
+                        }
+
+                        matcherInternalLoop = when(index) {
+                            0 -> firstParamPattern.matcher(link)
+                            1 -> secondParamPattern.matcher(link)
+                            2,3,4 -> prefixPattern.matcher(link)
+                            else -> firstParamPattern.matcher(link)
+                        }
+
+                        if (matcherInternalLoop.find()) {
+                            valuesArray.put(matcherInternalLoop.group(2))
+                            translatedValuesArray.put(translatedValue)
+                        }
+                        position++
+                    }
+                    jsonObject.put("selectedPosition", selectedPosition)
+                    jsonObject.put("values", valuesArray)
+                    jsonObject.put("translatedValues", translatedValuesArray)
+
+                    sortingVarJsonArray.put(jsonObject)
+                }
+                index++
+            }
+
+            return sortingVarJsonArray
+        }
+
+
         private fun mangaListContentParse(context: Context?, pageContent: Document, limit: Int): HashMap<String, Any> {
             val mangaList = ArrayList<Manga>()
             val result = HashMap<String, Any>()
@@ -535,28 +682,61 @@ class SiteWorker {
         }
 
 
-        fun formChaptersList(URL: String, lastChapter: String): JSONArray {
+        fun formChaptersList(URL: String, lastChapter: String): List<MultiItemEntity> {
             val chaptersList = JSONArray()
+            val pattern = Pattern.compile("(\\d+)\\s-\\s(\\d+)")
             val ADULT_PREFIX = "?mtr=1"
+            val result : ArrayList<MultiItemEntity> = ArrayList<MultiItemEntity>()
             val pageDownloader = PageDownloader()
             val pageContent: Document
             try {
                 if (lastChapter == "/") {
-                    return chaptersList
+                    return result
                 }
+
+
+
                 pageContent = pageDownloader.execute(SITE_URL + URL + lastChapter + ADULT_PREFIX).get()
                 val element = pageContent.getElementById("chapterSelectorSelect")
-                val elements = element.getElementsByTag("option")
+                var elements = element.getElementsByTag("option")
+                elements.reverse()
                 var index = 0
+                var volumeIndex = 0
+                var currentVolume : Volume? = null
                 for (element1 in elements) {
-                    val `object` = JSONObject()
-                    `object`.put("name", element1.text())
-                    var link = element1.attr("value")
-                    link = link.substring(URL.length)
-                    `object`.put("link", link)
-                    chaptersList.put(index, `object`)
-                    index++
+                    val matcher = pattern.matcher(element1.text())
+                    if (matcher.find()) {
+                        val currentVolumeNumber = (matcher.group(1) ?: "0").toInt()
+
+                        if (volumeIndex != currentVolumeNumber) {
+                            if (currentVolume != null && volumeIndex != 0)
+                                result.add(currentVolume)
+
+                            currentVolume = Volume(currentVolumeNumber)
+                            volumeIndex = currentVolumeNumber
+                        }
+
+
+                        val chapterNumber = (matcher.group(2) ?: "0").toInt()
+                        var link = element1.attr("value")
+                        link = link.substring(URL.length)
+
+                        var currentChapter = Chapter(element1.text(), chapterNumber, link)
+
+                        currentVolume?.addSubItem(currentChapter)
+
+                        val jsonObject = JSONObject()
+
+                        jsonObject.put("chapterName", element1.text())
+                        jsonObject.put("chapterNumber", chapterNumber)
+                        jsonObject.put("volumeNumber", currentVolumeNumber)
+                        jsonObject.put("link", link)
+                        chaptersList.put(index, jsonObject)
+                        index++
+                    }
                 }
+                if (currentVolume != null && volumeIndex != 0)
+                    result.add(currentVolume)
 
             } catch (e: InterruptedException) {
                 e.printStackTrace()
@@ -568,7 +748,7 @@ class SiteWorker {
                 e.printStackTrace()
             }
 
-            return chaptersList
+            return result
         }
 
         val standartUri: Uri.Builder

@@ -6,7 +6,8 @@
         android:id="@+id/relativeContainer"
         android:layout_width="match_parent"
         android:layout_height="match_parent"
-        tools:context=".activities.MainActivity">
+        tools:context=".activities.MainActivity"
+        android:background="?attr/colorPrimary">
 
 
     <include layout="@layout/toolbar"/>
@@ -23,11 +24,11 @@
                 android:layout_height="wrap_content"
                 android:id="@+id/swipeContainer">
 
-        <androidx.recyclerview.widget.RecyclerView
-                android:id="@+id/movieListRecyclerView"
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                app:layout_behavior="@string/appbar_scrolling_view_behavior"/>
+            <androidx.recyclerview.widget.RecyclerView
+                    android:id="@+id/movieListRecyclerView"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    app:layout_behavior="@string/appbar_scrolling_view_behavior"/>
 
         </androidx.swiperefreshlayout.widget.SwipeRefreshLayout>
 

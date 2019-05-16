@@ -10,14 +10,14 @@
     <string name="tab_text_1">Описание</string>
     <string name="tab_text_2">Источники</string>
     <string name="action_settings">Настройки</string>
+    <string name="action_sort">Сортировка</string>
     <string name="search_hint">Поиск</string>
     <string name="age_description">Год:</string>
     <string name="genres_description">Жанры:</string>
     <string name="production_country_description">Производство:</string>
     <string name="editor_choice_title">Выбор редакции</string>
-    <string name="new_movie_title">Новинки</string>
-    <string name="best_movie_title">Лучшие</string>
-    <string name="random_movie_title">Случайная манга</string>
+    <string name="list_manga_title">Полный список</string>
+    <string name="random_manga_title">Случайная манга</string>
     <string name="genres_title">Жанры</string>
     <string name="cant_connect_error">Ошибка загрузки. Проверьте интернет подключение</string>
     <string name="progress_text">Идет загрузка данных…</string>
@@ -104,4 +104,7 @@
     <string name="title_activity_manga_reader">MangaReaderActivity</string>
     <string name="previousButtonText">\u003c-</string>
     <string name="nextButtonText">-\u003e</string>
+
+    <!-- TODO: Remove or change this placeholder text -->
+    <string name="hello_blank_fragment">Hello blank fragment</string>
 </resources>

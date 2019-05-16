@@ -74,8 +74,6 @@ class MangaAboutActivity : AppCompatActivity(), MangaAboutFragment.OnFragmentInt
 
             mangaInfo = JSONObject(mangaInfoString!!)
 
-
-
             this.title = mangaInfo.getString("title")
             this.genres = mangaInfo.getString("genres")
             this.imageURL = mangaInfo.getString("image_url")
@@ -150,7 +148,7 @@ class MangaAboutActivity : AppCompatActivity(), MangaAboutFragment.OnFragmentInt
     }
 
     override fun onCreateOptionsMenu(menu: Menu): Boolean {
-        // Inflate the menu; this adds items to the action bar if it is present.
+
         menuInflater.inflate(R.menu.menu_manga_about, menu)
         optionsMenu = menu
 
@@ -168,19 +166,19 @@ class MangaAboutActivity : AppCompatActivity(), MangaAboutFragment.OnFragmentInt
             emmitFavorite(isFavorite)
             null
         }.subscribeOn(Schedulers.io())
-                .subscribe(object : CompletableObserver {
-                    override fun onSubscribe(d: Disposable) {
+        .subscribe(object : CompletableObserver {
+            override fun onSubscribe(d: Disposable) {
 
-                    }
+            }
 
-                    override fun onComplete() {
-                        Log.d("Task", "Subscribe to favorite changes completed")
-                    }
+            override fun onComplete() {
+                Log.d("Task", "Subscribe to favorite changes completed")
+            }
 
-                    override fun onError(e: Throwable) {
+            override fun onError(e: Throwable) {
 
-                    }
-                })
+            }
+        })
 
         return true
     }
@@ -196,39 +194,39 @@ class MangaAboutActivity : AppCompatActivity(), MangaAboutFragment.OnFragmentInt
                         dataSource.deleteFavorites(currentManga)
                         null
                     }.subscribeOn(Schedulers.io())
-                            .subscribe(object : CompletableObserver {
-                                override fun onSubscribe(d: Disposable) {
+                    .subscribe(object : CompletableObserver {
+                        override fun onSubscribe(d: Disposable) {
 
-                                }
+                        }
 
-                                override fun onComplete() {
-                                    emmitFavorite(false)
-                                    Log.d("Task", "Delete completable completed")
-                                }
+                        override fun onComplete() {
+                            emmitFavorite(false)
+                            Log.d("Task", "Delete completable completed")
+                        }
 
-                                override fun onError(e: Throwable) {
-                                    Log.d("Task", "Delete completable error")
-                                }
-                            })
+                        override fun onError(e: Throwable) {
+                            Log.d("Task", "Delete completable error")
+                        }
+                    })
                 } else {
                     Completable.fromCallable {
                         dataSource.addFavorites(currentManga)
                         null
                     }.subscribeOn(Schedulers.io())
-                            .subscribe(object : CompletableObserver {
-                                override fun onSubscribe(d: Disposable) {
+                    .subscribe(object : CompletableObserver {
+                        override fun onSubscribe(d: Disposable) {
 
-                                }
+                        }
 
-                                override fun onComplete() {
-                                    emmitFavorite(true)
-                                    Log.d("Task", "Add completable completed")
-                                }
+                        override fun onComplete() {
+                            emmitFavorite(true)
+                            Log.d("Task", "Add completable completed")
+                        }
 
-                                override fun onError(e: Throwable) {
-                                    Log.d("Task", "Add completable error")
-                                }
-                            })
+                        override fun onError(e: Throwable) {
+                            Log.d("Task", "Add completable error")
+                        }
+                    })
                 }
             }
             R.id.action_settings -> {

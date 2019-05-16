@@ -1,6 +1,5 @@
 package ru.garretech.readmanga.activities
 
-import android.os.Build
 import androidx.appcompat.app.AppCompatActivity
 import android.os.Bundle
 import android.os.Handler
@@ -8,7 +7,6 @@ import android.view.KeyEvent
 import android.view.View
 import androidx.viewpager.widget.ViewPager
 import kotlinx.android.synthetic.main.activity_manga_reader.*
-import kotlinx.android.synthetic.main.toolbar.*
 import org.json.JSONArray
 import ru.garretech.readmanga.adapters.ImageScrollAdapter
 import ru.garretech.readmanga.interfaces.OnViewPagerClickListener
@@ -56,9 +54,6 @@ class MangaReaderActivity : AppCompatActivity(), OnViewPagerClickListener {
         setContentView(R.layout.activity_manga_reader)
         setSupportActionBar(mangaReaderToolbar)
         supportActionBar?.setDisplayHomeAsUpEnabled(true)
-
-        //if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.LOLLIPOP)
-        //    supportActionBar?.setBackgroundDrawable(getDrawable(R.color.black_overlay))
 
         val imageListString = intent.getStringExtra("imageList")
         val chapterName = intent.getStringExtra("chapterName")

@@ -44,15 +44,6 @@ class MangaAboutFragment : androidx.fragment.app.Fragment() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         if (arguments != null) {
-            /*mangaTitle = arguments!!.getString(ARG_PARAM1)
-            mangaGenres = arguments!!.getString(ARG_PARAM2)
-            mangaProduction = arguments!!.getString(ARG_PARAM3)
-            mangaSeriesNumber = arguments!!.getString(ARG_PARAM4)
-            mangaDuration = arguments!!.getString(ARG_PARAM5)
-            //mangaAge = arguments!!.getString(ARG_PARAM6)
-            mangaDescription = arguments!!.getString(ARG_PARAM7)
-            mangaImageURL = arguments!!.getString(ARG_PARAM8)
-            mangaURL = arguments!!.getString(ARG_PARAM9)*/
 
             try {
                 image = SiteWorker.getCachedImage(context!!, mangaImageURL!!)
@@ -127,7 +118,7 @@ class MangaAboutFragment : androidx.fragment.app.Fragment() {
      * See the Android Training lesson [Communicating with Other Fragments](http://developer.android.com/training/basics/fragments/communicating.html) for more information.
      */
     interface OnFragmentInteractionListener {
-        // TODO: Update argument type and name
+        // TODO: Update argument type and chapterName
         fun onFragmentInteraction(uri: Uri)
     }
 
@@ -171,6 +162,6 @@ class MangaAboutFragment : androidx.fragment.app.Fragment() {
             return fragment
         }
     }
-}// Required empty public constructor
+}
 
 

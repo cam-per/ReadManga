@@ -16,7 +16,7 @@ abstract class AppDatabase : RoomDatabase() {
 
     companion object {
 
-        private val DATABASE_NAME = "app_database"
+        private val DATABASE_NAME = "manga_database"
         private var INSTANCE: AppDatabase? = null
 
 

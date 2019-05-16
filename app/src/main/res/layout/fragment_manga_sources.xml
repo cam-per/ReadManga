@@ -6,8 +6,8 @@
     tools:context=".fragments.MangaSourcesFragment"
     android:id="@+id/movie_sources_fragment">
 
-    <ListView
-        android:id="@+id/sourcesListView"
+    <androidx.recyclerview.widget.RecyclerView
+        android:id="@+id/sourcesRecyclerView"
         android:layout_width="match_parent"
         android:layout_height="match_parent" />
 </FrameLayout>

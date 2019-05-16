@@ -36,7 +36,7 @@ class RecyclerAdapter(layoutResId: Int, data: List<Manga>?) : BaseQuickAdapter<M
 
 
     override fun convert(helper: BaseViewHolder, item: Manga) {
-        helper.setText(R.id.mangaTitleNew, item.title)
-        helper.setImageBitmap(R.id.mangaPhotoNew, item.image)
+        helper.setText(R.id.mangaTitle, item.title)
+        helper.setImageBitmap(R.id.mangaPhoto, item.image)
     }
 }
