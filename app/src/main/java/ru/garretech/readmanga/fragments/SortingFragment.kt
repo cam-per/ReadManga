@@ -14,7 +14,6 @@ import org.json.JSONArray
 import org.json.JSONObject
 import ru.garretech.readmanga.R
 import ru.garretech.readmanga.adapters.CustomTableLayout
-import ru.garretech.readmanga.tools.SiteWorker
 
 
 class SortingFragment : DialogFragment() {
@@ -23,10 +22,10 @@ class SortingFragment : DialogFragment() {
     private var listener: OnFragmentInteractionListener? = null
     private lateinit var paramsJSONArray : JSONArray
 
-    private lateinit var countriesRadioGroup : CustomTableLayout
+    private lateinit var categoriesRadioGroup : CustomTableLayout
     private lateinit var sortingRadioGroup : CustomTableLayout
     private lateinit var filterRadioGroup : CustomTableLayout
-    private lateinit var othersRadioGroup : CustomTableLayout
+    private lateinit var agesRadioGroup : CustomTableLayout
 
     private var optionsMap = HashMap<String,JSONObject>()
 
@@ -35,6 +34,7 @@ class SortingFragment : DialogFragment() {
 
         arguments?.let {
             paramsJSONArray = JSONArray(it.getString(ARG_PARAM1))
+            initialURL = Uri.parse(it.getString(ARG_PARAM2))
         }
     }
 
@@ -42,22 +42,22 @@ class SortingFragment : DialogFragment() {
                               savedInstanceState: Bundle?): View? {
         val view = inflater.inflate(R.layout.fragment_sorting, container, false)
         var selectedPosition : Int
-        countriesRadioGroup = view.findViewById<CustomTableLayout>(R.id.countriesRadioGroup)
+        categoriesRadioGroup = view.findViewById<CustomTableLayout>(R.id.categoriesRadioGroup)
         sortingRadioGroup = view.findViewById<CustomTableLayout>(R.id.sortingRadioGroup)
         filterRadioGroup = view.findViewById<CustomTableLayout>(R.id.filterRadioGroup)
-        othersRadioGroup = view.findViewById<CustomTableLayout>(R.id.othersRadioGroup)
+        agesRadioGroup = view.findViewById<CustomTableLayout>(R.id.ageRadioGroup)
 
 
 
-        var jsonObject = paramsJSONArray.getJSONObject(COUNTRIES_INDEX)
-        optionsMap.put("countries",jsonObject)
+        var jsonObject = paramsJSONArray.getJSONObject(CATEGORIES_INDEX)
+        optionsMap.put("categories",jsonObject)
         selectedPosition = jsonObject.getString("selectedPosition").toInt()
         var namesJson = jsonObject.getJSONArray("translatedValues")
 
         var tableRow = TableRow(context)
         for (i in 0 until namesJson.length()) {
             if (i % 3 == 0) {
-                countriesRadioGroup.addView(tableRow)
+                categoriesRadioGroup.addView(tableRow)
                 tableRow = TableRow(context)
             }
             val radioButton = inflater.inflate(R.layout.custom_radio_button,null) as RadioButton
@@ -65,8 +65,8 @@ class SortingFragment : DialogFragment() {
             radioButton.tag = i
             tableRow.addView(radioButton)
         }
-        countriesRadioGroup.addView(tableRow)
-        if (selectedPosition != -1) countriesRadioGroup.checkChildAt(selectedPosition)
+        categoriesRadioGroup.addView(tableRow)
+        if (selectedPosition != -1) categoriesRadioGroup.checkChildAt(selectedPosition)
 
 
 
@@ -112,7 +112,7 @@ class SortingFragment : DialogFragment() {
 
 
 
-        jsonObject = paramsJSONArray.getJSONObject(OTHERS_INDEX)
+        jsonObject = paramsJSONArray.getJSONObject(AGES_INDEX)
         optionsMap.put("others",jsonObject)
         selectedPosition = jsonObject.getString("selectedPosition").toInt()
         namesJson = jsonObject.getJSONArray("translatedValues")
@@ -120,7 +120,7 @@ class SortingFragment : DialogFragment() {
         tableRow = TableRow(context)
         for (i in 0 until namesJson.length()) {
             if (i % 2 == 0) {
-                othersRadioGroup.addView(tableRow)
+                agesRadioGroup.addView(tableRow)
                 tableRow = TableRow(context)
             }
             val radioButton = inflater.inflate(R.layout.custom_radio_button,null) as RadioButton
@@ -129,8 +129,8 @@ class SortingFragment : DialogFragment() {
             tableRow.addView(radioButton)
         }
 
-        othersRadioGroup.addView(tableRow)
-        if (selectedPosition != -1) othersRadioGroup.checkChildAt(selectedPosition)
+        agesRadioGroup.addView(tableRow)
+        if (selectedPosition != -1) agesRadioGroup.checkChildAt(selectedPosition)
 
         val sortingButton = view.findViewById<Button>(R.id.sortButton)
         sortingButton.setOnClickListener {
@@ -173,10 +173,10 @@ class SortingFragment : DialogFragment() {
          * requestQuery = mSiteWorker!!.RequestQuery(applicationContext, SiteWorker.SIMPLE_QUERY, SiteWorker.ONGOING_PREFIX, params)
          */
 
-        var selectedCountry = countriesRadioGroup.activeRadioButtonIndex
+        var selectedCategory = categoriesRadioGroup.activeRadioButtonIndex
         val selectedSorting = sortingRadioGroup.activeRadioButtonIndex
         val selectedFilter = filterRadioGroup.activeRadioButtonIndex
-        var selectedOthers = othersRadioGroup.activeRadioButtonIndex
+        var selectedAge = agesRadioGroup.activeRadioButtonIndex
 
 
         var selectedPrefixIndex : Int
@@ -188,20 +188,20 @@ class SortingFragment : DialogFragment() {
 
         var jsonObject : JSONObject
 
-        if (selectedOthers != -1 && selectedCountry != -1)
-            selectedCountry = -1
+        if (selectedAge != -1 && selectedCategory != -1)
+            selectedCategory = -1
 
-        if (selectedCountry != -1 || selectedOthers != -1)
+        if (selectedCategory != -1 || selectedAge != -1)
             hasPrefix = true
 
         if (hasPrefix) {
-            if (selectedCountry != -1) {
-                jsonObject = optionsMap.get("countries")!!
-                selectedPrefixIndex = selectedCountry
+            if (selectedCategory != -1) {
+                jsonObject = optionsMap.get("categories")!!
+                selectedPrefixIndex = selectedCategory
             }
             else {
                 jsonObject = optionsMap.get("others")!!
-                selectedPrefixIndex = selectedOthers
+                selectedPrefixIndex = selectedAge
             }
 
             prefix.append("list")
@@ -246,19 +246,21 @@ class SortingFragment : DialogFragment() {
     companion object {
 
         private const val ARG_PARAM1 = "jsonArray"
+        private const val ARG_PARAM2 = "initialURL"
         private const val SORTING_INDEX = 0
         private const val FILTER_INDEX = 1
         private const val GENRES_INDEX = 2
-        private const val COUNTRIES_INDEX = 3
-        private const val OTHERS_INDEX = 4
+        private const val CATEGORIES_INDEX = 3
+        private const val AGES_INDEX = 4
 
 
         // TODO: Rename and change types and number of parameters
         @JvmStatic
-        fun newInstance(param1: JSONArray) =
+        fun newInstance(jsonArray: JSONArray, initialURL : String) =
             SortingFragment().apply {
                 arguments = Bundle().apply {
-                    putString(ARG_PARAM1,param1.toString())
+                    putString(ARG_PARAM1,jsonArray.toString())
+                    putString(ARG_PARAM2,initialURL)
                 }
             }
     }

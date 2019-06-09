@@ -53,7 +53,7 @@
                     android:text="Категории"/>
 
             <ru.garretech.readmanga.adapters.CustomTableLayout
-                android:id="@+id/countriesRadioGroup"
+                android:id="@+id/categoriesRadioGroup"
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
                 android:orientation="horizontal" />
@@ -64,7 +64,7 @@
                     android:text="Возрастные рекомендации"/>
 
             <ru.garretech.readmanga.adapters.CustomTableLayout
-                android:id="@+id/othersRadioGroup"
+                android:id="@+id/ageRadioGroup"
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content" />
 

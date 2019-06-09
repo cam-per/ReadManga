@@ -3,20 +3,39 @@ package ru.garretech.readmanga.activities
 import androidx.appcompat.app.AppCompatActivity
 import android.os.Bundle
 import android.os.Handler
-import android.view.KeyEvent
+import android.util.Log
+import android.view.Menu
+import android.view.MenuItem
 import android.view.View
 import androidx.viewpager.widget.ViewPager
+import io.reactivex.Single
+import io.reactivex.android.schedulers.AndroidSchedulers
+import io.reactivex.schedulers.Schedulers
 import kotlinx.android.synthetic.main.activity_manga_reader.*
 import org.json.JSONArray
+import org.json.JSONObject
 import ru.garretech.readmanga.adapters.ImageScrollAdapter
 import ru.garretech.readmanga.interfaces.OnViewPagerClickListener
 import ru.garretech.readmanga.R
+import ru.garretech.readmanga.fragments.PagePickerFragment
+import ru.garretech.readmanga.tools.SiteWorker
 
 /**
  * An example full-screen activity that shows and hides the system UI (i.e.
  * status bar and navigation/system bar) with user interaction.
  */
-class MangaReaderActivity : AppCompatActivity(), OnViewPagerClickListener {
+class MangaReaderActivity : AppCompatActivity(), OnViewPagerClickListener, PagePickerFragment.OnNumberPickedListener {
+
+    val chapterJsonArray : JSONArray by lazy { JSONArray(intent.getStringExtra("chapterArray")) }
+    val mangaURL : String by lazy { intent.getStringExtra("mangaURL") }
+    var selectedChapterIndex = 0
+    lateinit var mMenu : Menu
+    lateinit var adapter: ImageScrollAdapter
+
+
+    override fun onNumberPicked(pageIndex: Int) {
+        mangaContentView.setCurrentItem(pageIndex-1,true)
+    }
 
     override fun onClick() {
         toggle()
@@ -51,53 +70,85 @@ class MangaReaderActivity : AppCompatActivity(), OnViewPagerClickListener {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
 
+
+        /*
+        * Подгрузка в активность всех ссылок (или ссылок того же тома)
+        * При нажатии на переход на другую главу, пересоздается adapter с новыми данными
+        * mangaContentView инвалидирует данные
+        * Изменяется название тулбара на название главы
+        *
+        * */
+
         setContentView(R.layout.activity_manga_reader)
         setSupportActionBar(mangaReaderToolbar)
         supportActionBar?.setDisplayHomeAsUpEnabled(true)
 
-        val imageListString = intent.getStringExtra("imageList")
-        val chapterName = intent.getStringExtra("chapterName")
-        setTitle(chapterName)
-        val imageList = JSONArray(imageListString)
+        //val imageListString = intent.getStringExtra("imageList")
+        //val chapterName = intent.getStringExtra("chapterName")
+        selectedChapterIndex = intent.getIntExtra("selectedChapterIndex",0)
+
+        /*
+        * title :
+        * path :
+        *
+        * */
+        val chapterList1 = chapterJsonArray
+
+        title = (chapterJsonArray[selectedChapterIndex] as JSONObject).getString("chapterName")
 
         mVisible = true
 
 
-        val adapter = ImageScrollAdapter(this,imageList)
-        pageCount.text = imageList.length().toString()
-        updateCurrentPage(1)
-        adapter.setCustomOnClickListener(this)
-        mangaContentView.adapter = adapter
+        showProgressBar()
+        getPhotosRequestSingle(mangaURL + (this.chapterJsonArray[selectedChapterIndex] as JSONObject).getString("link")).observeOn(AndroidSchedulers.mainThread())
+            .subscribeOn(Schedulers.io())
+            .subscribe({ jsonArray ->
 
-        mangaContentView.setOnPageChangeListener(object : ViewPager.OnPageChangeListener {
-            override fun onPageScrollStateChanged(state: Int) {
+                val imageListJson = JSONArray()
 
-            }
+                for (index in 0 until jsonArray.length()) {
+                    val jsonTemp = jsonArray.getJSONArray(index)
+                    val link = jsonTemp.get(1).toString() + jsonTemp.get(2).toString()
 
-            override fun onPageScrolled(position: Int, positionOffset: Float, positionOffsetPixels: Int) {
-                updateCurrentPage(position+1)
-            }
-
-            override fun onPageSelected(position: Int) {
-
-            }
-
-        })
-
-        currentPageText.setOnEditorActionListener { v, actionId, event ->
-            when(actionId) {
-                KeyEvent.KEYCODE_ENDCALL -> {
-                    var value = currentPageText.text.toString().toInt() - 1
-
-                    if (value > imageList.length())
-                        value = imageList.length()
-
-                    mangaContentView.setCurrentItem(value,true)
-                    true
+                    imageListJson.put(link)
                 }
-                else -> false
-            }
-        }
+
+                adapter = ImageScrollAdapter(this,imageListJson)
+                pageCount.text = imageListJson.length().toString()
+                updateCurrentPageText(1)
+                adapter.setCustomOnClickListener(this)
+                mangaContentView.adapter = adapter
+
+                dismissProgressBar()
+
+                //if (progressBottomSheet.isAdded)
+                //   progressBottomSheet.dismissAllowingStateLoss()
+
+                mangaContentView.setOnPageChangeListener(object : ViewPager.OnPageChangeListener {
+                    override fun onPageScrollStateChanged(state: Int) {
+
+                    }
+
+                    override fun onPageScrolled(position: Int, positionOffset: Float, positionOffsetPixels: Int) {
+                        updateCurrentPageText(position+1)
+                    }
+
+                    override fun onPageSelected(position: Int) {
+
+                    }
+
+                })
+
+                pageSelectorLayout.setOnClickListener {
+                    val pagePicker = PagePickerFragment.newInstance(mangaContentView.currentItem+1,imageListJson.length())
+                    pagePicker.view?.setBackgroundResource(android.R.color.transparent)
+                    pagePicker.show(supportFragmentManager,"pagePicker")
+                }
+
+            }, { error ->
+                Log.d("Photos error", error.localizedMessage)
+            })
+
 
     }
 
@@ -111,6 +162,8 @@ class MangaReaderActivity : AppCompatActivity(), OnViewPagerClickListener {
 
         delayedHide(100)
     }
+
+
 
     fun toggle() {
         if (mVisible) {
@@ -157,18 +210,88 @@ class MangaReaderActivity : AppCompatActivity(), OnViewPagerClickListener {
         private val UI_ANIMATION_DELAY = 300
     }
 
-    fun updateCurrentPage(value : Int) {
+    fun prepareImageSet(mangaURL : String, path : String) {
+        mangaContentView.removeAllViews()
+        getPhotosRequestSingle(mangaURL + path).observeOn(AndroidSchedulers.mainThread())
+            .subscribeOn(Schedulers.io())
+            .subscribe({ jsonArray ->
+
+                val imageListJson = JSONArray()
+
+                for (index in 0 until jsonArray.length()) {
+                    val jsonTemp = jsonArray.getJSONArray(index)
+                    val link = jsonTemp.get(1).toString() + jsonTemp.get(2).toString()
+
+                    imageListJson.put(link)
+                }
+
+
+                adapter = ImageScrollAdapter(this,imageListJson)
+                pageCount.text = imageListJson.length().toString()
+                updateCurrentPageText(1)
+                adapter.setCustomOnClickListener(this)
+                mangaContentView.adapter = adapter
+                mangaContentView.invalidate()
+
+
+                dismissProgressBar()
+            }, { error ->
+                Log.d("Imagelist observer", "Error getting manga image list")
+            })
+    }
+
+    fun getPhotosRequestSingle(url: String) : Single<JSONArray> {
+        return Single.create<JSONArray> { observer ->
+            val jsonArray = SiteWorker.getMangaImageList(url)
+            observer.onSuccess(jsonArray)
+        }
+    }
+
+    fun showProgressBar() {
+        readerProgress.visibility = View.VISIBLE
+    }
+
+    fun dismissProgressBar() {
+        readerProgress.visibility = View.GONE
+    }
+
+    fun updateCurrentPageText(value : Int) {
         currentPageText.setText(value.toString())
+    }
+
+    fun previousChapter(view: View) {
+        if (selectedChapterIndex != 0) {
+            showProgressBar()
+            selectedChapterIndex--
+            val newChapter = chapterJsonArray[selectedChapterIndex] as JSONObject
+
+            title = newChapter.getString("chapterName")
+
+            prepareImageSet(mangaURL, newChapter.getString("link"))
+        }
+    }
+
+    fun nextChapter(view: View) {
+        if (selectedChapterIndex < chapterJsonArray.length()-1) {
+            showProgressBar()
+            selectedChapterIndex++
+            val newChapter = chapterJsonArray[selectedChapterIndex] as JSONObject
+
+            title = newChapter.getString("chapterName")
+
+            prepareImageSet(mangaURL, newChapter.getString("link"))
+
+        }
     }
 
 
     fun slidePrevious(view: View) {
-        mangaContentView.setCurrentItem(mangaContentView.currentItem - 1,true)
-        updateCurrentPage(mangaContentView.currentItem+1)
+        mangaContentView.setCurrentItem(mangaContentView.currentItem - 1, true)
+        updateCurrentPageText(mangaContentView.currentItem + 1)
     }
 
     fun slideNext(view: View) {
-        mangaContentView.setCurrentItem(mangaContentView.currentItem + 1,true)
-        updateCurrentPage(mangaContentView.currentItem+1)
+        mangaContentView.setCurrentItem(mangaContentView.currentItem + 1, true)
+        updateCurrentPageText(mangaContentView.currentItem + 1)
     }
 }

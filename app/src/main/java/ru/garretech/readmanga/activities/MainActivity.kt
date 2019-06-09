@@ -49,6 +49,7 @@ import ru.garretech.readmanga.Settings
 import ru.garretech.readmanga.adapters.RecyclerAdapter
 import ru.garretech.readmanga.database.AppDataSource
 import ru.garretech.readmanga.fragments.CustomLoadMoreView
+import ru.garretech.readmanga.fragments.DisclaimerFragment
 import ru.garretech.readmanga.fragments.ProgressBottomSheet
 import ru.garretech.readmanga.fragments.SortingFragment
 import ru.garretech.readmanga.models.Manga
@@ -104,7 +105,9 @@ class MainActivity : AppCompatActivity(), BaseQuickAdapter.OnItemClickListener, 
                         .observeOn(AndroidSchedulers.mainThread())
                         .subscribe(updateListConsumer))
             }
-            override fun onError(e: Throwable) {}
+            override fun onError(e: Throwable) {
+                Log.d("List observer", "Failed to get manga list")
+            }
         }
     }
 
@@ -132,7 +135,9 @@ class MainActivity : AppCompatActivity(), BaseQuickAdapter.OnItemClickListener, 
                         .observeOn(AndroidSchedulers.mainThread())
                         .subscribe(onLoadMoreConsumer))
             }
-            override fun onError(e: Throwable) {}
+            override fun onError(e: Throwable) {
+                Log.d("ONLOAD MORE OBSERVER", "Failed to perform on load more request")
+            }
         }
     }
 
@@ -189,6 +194,7 @@ class MainActivity : AppCompatActivity(), BaseQuickAdapter.OnItemClickListener, 
         mangaAdapter!!.setEnableLoadMore(false)
         mangaAdapter!!.setLoadMoreView(CustomLoadMoreView())
 
+        firstStartDisclaimer()
 
         if (hasConnection()) {
             activityState = ACTIVITY_STATE.ONLINE
@@ -211,9 +217,9 @@ class MainActivity : AppCompatActivity(), BaseQuickAdapter.OnItemClickListener, 
         dismissSortingMenu()
 
         val searchManager = getSystemService(Context.SEARCH_SERVICE) as SearchManager
-        searchView!!.setSearchableInfo(searchManager.getSearchableInfo(componentName))
+        searchView.setSearchableInfo(searchManager.getSearchableInfo(componentName))
 
-        searchView!!.setOnQueryTextListener(object : SearchView.OnQueryTextListener {
+        searchView.setOnQueryTextListener(object : SearchView.OnQueryTextListener {
             override fun onQueryTextSubmit(queryString: String): Boolean {
 
                 if (hasConnection()) {
@@ -232,8 +238,8 @@ class MainActivity : AppCompatActivity(), BaseQuickAdapter.OnItemClickListener, 
 
                     title = getString(R.string.search_hint) + ": $queryString"
 
-                    if (!searchView!!.isIconified) {
-                        searchView!!.isIconified = true
+                    if (!searchView.isIconified) {
+                        searchView.isIconified = true
                     }
                 } else showConnectionError()
 
@@ -266,7 +272,7 @@ class MainActivity : AppCompatActivity(), BaseQuickAdapter.OnItemClickListener, 
                     }.observeOn(AndroidSchedulers.mainThread())
                         .subscribeOn(Schedulers.io())
                         .subscribe( { jsonArray ->
-                            val sortingFragment = SortingFragment.newInstance(jsonArray)
+                            val sortingFragment = SortingFragment.newInstance(jsonArray,requestQuery?.requestUri()?.toString()!!)
                             sortingFragment.show(supportFragmentManager, "sortingFragment")
 
                             if (progressBottomSheet.isAdded)
@@ -353,7 +359,7 @@ class MainActivity : AppCompatActivity(), BaseQuickAdapter.OnItemClickListener, 
                                 progressBottomSheet.dismissAllowingStateLoss()
 
                             startActivity(intent)
-                        }, { error -> Log.d("Error occured",error.localizedMessage)
+                        }, { error -> Log.d("Error occured","Cant' perform manga info request")
                         }))
 
 
@@ -484,7 +490,7 @@ class MainActivity : AppCompatActivity(), BaseQuickAdapter.OnItemClickListener, 
             }
 
             val params = result.get("params") as HashMap<String,String>
-            var completable : Completable
+            val completable : Completable
             if (params.size == 0)
                 completable = getRequestQueryCompletable(SiteWorker.SIMPLE_QUERY, result.get("path") as String)
             else
@@ -529,7 +535,7 @@ class MainActivity : AppCompatActivity(), BaseQuickAdapter.OnItemClickListener, 
                             progressBottomSheet.dismissAllowingStateLoss()
 
                         startActivity(intent)
-                    }, { error -> Log.d("Error occured",error.localizedMessage) }))
+                    }, { error -> Log.d("Error occured","Can't perform manga info requestk") }))
         } else showConnectionError()
     }
 
@@ -652,7 +658,18 @@ class MainActivity : AppCompatActivity(), BaseQuickAdapter.OnItemClickListener, 
     }
 
     fun firstStartDisclaimer() {
+        val mSettings = getSharedPreferences(Settings.APP_PREFERENCES, Context.MODE_PRIVATE)
+        val APP_FIRST_RUN = "first_run_check"
+        var isFirstRun = mSettings.getBoolean(APP_FIRST_RUN,true)
 
+        if (isFirstRun) {
+            val editor = mSettings.edit();
+            editor.putBoolean(APP_FIRST_RUN, false);
+            editor.apply();
+
+            val disclaimerFragment = DisclaimerFragment()
+            disclaimerFragment.show(supportFragmentManager, "disclaimer")
+        }
     }
 
 
@@ -686,8 +703,10 @@ class MainActivity : AppCompatActivity(), BaseQuickAdapter.OnItemClickListener, 
     fun getMangaRequestSingle(url: String) : Single<JSONObject> {
         return Single.create<JSONObject> { observer ->
             val jsonObject = SiteWorker.getMangaInfo(url)
-
-            observer.onSuccess(jsonObject)
+            if (jsonObject.length() != 0)
+                observer.onSuccess(jsonObject)
+            else
+                observer.onError(NullPointerException())
         }
     }
 }

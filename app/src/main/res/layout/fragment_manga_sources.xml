@@ -6,6 +6,12 @@
     tools:context=".fragments.MangaSourcesFragment"
     android:id="@+id/movie_sources_fragment">
 
+    <ProgressBar
+            android:id="@+id/sourcesProgress"
+            style="?android:attr/progressBarStyleInverse"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_gravity="center_horizontal|center_vertical"/>
     <androidx.recyclerview.widget.RecyclerView
         android:id="@+id/sourcesRecyclerView"
         android:layout_width="match_parent"

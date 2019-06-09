@@ -8,6 +8,7 @@ import android.util.Log
 import com.chad.library.adapter.base.entity.MultiItemEntity
 
 import io.reactivex.Observable
+import io.reactivex.Single
 import okhttp3.FormBody
 import okhttp3.OkHttpClient
 import okhttp3.Request
@@ -31,11 +32,11 @@ import java.io.FileNotFoundException
 import java.io.FileOutputStream
 import java.io.IOException
 import java.util.Arrays
-import java.util.HashMap
 import java.util.concurrent.ExecutionException
 import java.util.regex.Matcher
 import java.util.regex.Pattern
 import kotlin.collections.ArrayList
+import kotlin.collections.HashMap
 
 /*
 * Класс для работы с сайтом
@@ -223,7 +224,7 @@ class SiteWorker {
         }
 
 
-        @Throws(InterruptedException::class, ExecutionException::class, NullPointerException::class)
+        @Throws(InterruptedException::class, ExecutionException::class, NullPointerException::class,IOException::class, FileNotFoundException::class)
         fun getEditorChoiceMangasList(context: Context?): List<Manga> {
             val pageDownloader = PageDownloader()
             val pageContent: Document
@@ -682,73 +683,80 @@ class SiteWorker {
         }
 
 
-        fun formChaptersList(URL: String, lastChapter: String): List<MultiItemEntity> {
-            val chaptersList = JSONArray()
-            val pattern = Pattern.compile("(\\d+)\\s-\\s(\\d+)")
-            val ADULT_PREFIX = "?mtr=1"
-            val result : ArrayList<MultiItemEntity> = ArrayList<MultiItemEntity>()
-            val pageDownloader = PageDownloader()
-            val pageContent: Document
-            try {
-                if (lastChapter == "/") {
-                    return result
-                }
+        fun formChaptersList(URL: String, lastChapter: String): Single<HashMap<String, Any>> {
+            return Single.create {
+                val resultingMap = HashMap<String, Any>()
 
-
-
-                pageContent = pageDownloader.execute(SITE_URL + URL + lastChapter + ADULT_PREFIX).get()
-                val element = pageContent.getElementById("chapterSelectorSelect")
-                var elements = element.getElementsByTag("option")
-                elements.reverse()
-                var index = 0
-                var volumeIndex = 0
-                var currentVolume : Volume? = null
-                for (element1 in elements) {
-                    val matcher = pattern.matcher(element1.text())
-                    if (matcher.find()) {
-                        val currentVolumeNumber = (matcher.group(1) ?: "0").toInt()
-
-                        if (volumeIndex != currentVolumeNumber) {
-                            if (currentVolume != null && volumeIndex != 0)
-                                result.add(currentVolume)
-
-                            currentVolume = Volume(currentVolumeNumber)
-                            volumeIndex = currentVolumeNumber
-                        }
-
-
-                        val chapterNumber = (matcher.group(2) ?: "0").toInt()
-                        var link = element1.attr("value")
-                        link = link.substring(URL.length)
-
-                        var currentChapter = Chapter(element1.text(), chapterNumber, link)
-
-                        currentVolume?.addSubItem(currentChapter)
-
-                        val jsonObject = JSONObject()
-
-                        jsonObject.put("chapterName", element1.text())
-                        jsonObject.put("chapterNumber", chapterNumber)
-                        jsonObject.put("volumeNumber", currentVolumeNumber)
-                        jsonObject.put("link", link)
-                        chaptersList.put(index, jsonObject)
-                        index++
+                val chaptersList = JSONArray()
+                val pattern = Pattern.compile("(\\d+)\\s-\\s(\\d+)")
+                val ADULT_PREFIX = "?mtr=1"
+                val adapterList: ArrayList<MultiItemEntity> = ArrayList<MultiItemEntity>()
+                val pageDownloader = PageDownloader()
+                val pageContent: Document
+                try {
+                    if (lastChapter == "/") {
+                        it.onSuccess(resultingMap)
                     }
+
+                    pageContent = pageDownloader.execute(SITE_URL + URL + lastChapter + ADULT_PREFIX).get()
+                    val element = pageContent.getElementById("chapterSelectorSelect")
+                    var elements = element.getElementsByTag("option")
+                    elements.reverse()
+
+                    var index = 0
+                    var volumeIndex = 0
+                    var currentVolume: Volume? = null
+
+                    for (element1 in elements) {
+                        val matcher = pattern.matcher(element1.text())
+
+                        if (matcher.find()) {
+                            val currentVolumeNumber = (matcher.group(1) ?: "0").toInt()
+
+                            if (volumeIndex != currentVolumeNumber) {
+                                if (currentVolume != null && volumeIndex != 0)
+                                    adapterList.add(currentVolume)
+
+                                currentVolume = Volume(currentVolumeNumber)
+                                volumeIndex = currentVolumeNumber
+                            }
+
+
+                            val chapterNumber = (matcher.group(2) ?: "0").toInt()
+                            var link = element1.attr("value")
+                            link = link.substring(URL.length)
+
+                            var currentChapter = Chapter(element1.text(), chapterNumber, currentVolumeNumber, link)
+
+                            currentVolume?.addSubItem(currentChapter)
+
+                            val jsonObject = JSONObject()
+
+                            jsonObject.put("chapterName", element1.text())
+                            jsonObject.put("chapterNumber", chapterNumber)
+                            jsonObject.put("volumeNumber", currentVolumeNumber)
+                            jsonObject.put("link", link)
+                            chaptersList.put(index, jsonObject)
+                            index++
+                        }
+                    }
+                    if (currentVolume != null && volumeIndex != 0)
+                        adapterList.add(currentVolume)
+
+                } catch (e: InterruptedException) {
+                    e.printStackTrace()
+                } catch (e: ExecutionException) {
+                    e.printStackTrace()
+                } catch (e: JSONException) {
+                    e.printStackTrace()
+                } catch (e: NullPointerException) {
+                    e.printStackTrace()
                 }
-                if (currentVolume != null && volumeIndex != 0)
-                    result.add(currentVolume)
 
-            } catch (e: InterruptedException) {
-                e.printStackTrace()
-            } catch (e: ExecutionException) {
-                e.printStackTrace()
-            } catch (e: JSONException) {
-                e.printStackTrace()
-            } catch (e: NullPointerException) {
-                e.printStackTrace()
+                resultingMap.put("adapterList", adapterList)
+                resultingMap.put("chapterJsonArray", chaptersList)
+                it.onSuccess(resultingMap)
             }
-
-            return result
         }
 
         val standartUri: Uri.Builder

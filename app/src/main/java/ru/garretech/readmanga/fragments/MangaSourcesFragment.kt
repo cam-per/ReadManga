@@ -8,7 +8,6 @@ import android.net.ConnectivityManager
 import android.net.Uri
 import android.os.Build
 import android.os.Bundle
-import android.os.Handler
 import android.util.Log
 import android.view.LayoutInflater
 import android.view.View
@@ -17,36 +16,33 @@ import android.widget.*
 import androidx.recyclerview.widget.LinearLayoutManager
 import androidx.recyclerview.widget.RecyclerView
 import com.chad.library.adapter.base.entity.MultiItemEntity
-import io.reactivex.Single
 import io.reactivex.android.schedulers.AndroidSchedulers
 import io.reactivex.disposables.CompositeDisposable
 import io.reactivex.schedulers.Schedulers
-
 import org.json.JSONArray
+
 import org.json.JSONException
 import org.json.JSONObject
 import ru.garretech.readmanga.R
-import ru.garretech.readmanga.activities.MainActivity
 import ru.garretech.readmanga.activities.MangaReaderActivity
 import ru.garretech.readmanga.adapters.ExpandableItemAdapter
 import ru.garretech.readmanga.interfaces.OnExpandableItemClickListener
 import ru.garretech.readmanga.models.Chapter
-
-import java.util.ArrayList
 
 import ru.garretech.readmanga.tools.SiteWorker
 
 
 class MangaSourcesFragment : androidx.fragment.app.Fragment(), OnExpandableItemClickListener {
 
-    // TODO: Rename and change types of parameters
     private lateinit var newArrayAdapter : ExpandableItemAdapter
-    internal lateinit var episodesList : List<MultiItemEntity>
+    internal lateinit var adapterList : List<MultiItemEntity>
+    internal lateinit var chapterJsonArray : JSONArray
     internal lateinit var recyclerView: RecyclerView
     internal lateinit var sourcesInfo: JSONObject
     internal lateinit var URL: String
     internal lateinit var progressBottomSheet: ProgressBottomSheet
     internal lateinit var lastChapter: String
+    internal lateinit var sourcesProgress : ProgressBar
 
     /*  * Переходим по ссылке http://readmanga.me/tower_of_god/vol3/6
     * Считываем количество страниц из элемента с классом pages-count
@@ -64,18 +60,10 @@ class MangaSourcesFragment : androidx.fragment.app.Fragment(), OnExpandableItemC
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         if (arguments != null) {
-            try {
-                progressBottomSheet = ProgressBottomSheet()
-                sourcesInfo = JSONObject(arguments!!.getString(ARG_PARAM1))
-                URL = sourcesInfo.getString("url")
-                lastChapter = sourcesInfo.getString("last_chapter")
-                episodesList = SiteWorker.formChaptersList(URL, lastChapter)
-
-                newArrayAdapter = ExpandableItemAdapter(episodesList)
-                newArrayAdapter.onExpandableItemClickListener = this
-            } catch (e: JSONException) {
-                e.printStackTrace()
-            }
+            progressBottomSheet = ProgressBottomSheet()
+            sourcesInfo = JSONObject(arguments!!.getString(ARG_PARAM1))
+            URL = sourcesInfo.getString("url")
+            lastChapter = sourcesInfo.getString("last_chapter")
 
         }
     }
@@ -84,8 +72,22 @@ class MangaSourcesFragment : androidx.fragment.app.Fragment(), OnExpandableItemC
         // Inflate the layout for this fragment
         val view = inflater.inflate(R.layout.fragment_manga_sources, container, false)
         recyclerView = view.findViewById(R.id.sourcesRecyclerView)
-        recyclerView.layoutManager = LinearLayoutManager(context)
-        recyclerView.adapter = newArrayAdapter
+        sourcesProgress  = view.findViewById(R.id.sourcesProgress)
+
+        showProgressBar()
+        bag.add(SiteWorker.formChaptersList(URL, lastChapter).subscribeOn(Schedulers.io()).observeOn(AndroidSchedulers.mainThread())
+            .subscribe( { map ->
+                adapterList = map["adapterList"] as List<MultiItemEntity>
+                chapterJsonArray = map["chapterJsonArray"] as JSONArray
+
+                newArrayAdapter = ExpandableItemAdapter(adapterList)
+                newArrayAdapter.onExpandableItemClickListener = this
+                recyclerView.layoutManager = LinearLayoutManager(context)
+                recyclerView.adapter = newArrayAdapter
+                dismissProgressBar()
+            },{
+                Log.d("Chapter observer","Error getting chapter list")
+            }))
 
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.LOLLIPOP) {
             val mDivider = context?.getDrawable(R.drawable.line_divider)
@@ -136,56 +138,30 @@ class MangaSourcesFragment : androidx.fragment.app.Fragment(), OnExpandableItemC
     }
 
     override fun onChapterClick(item: Chapter) {
-        if (!progressBottomSheet.isAdded) {
-            progressBottomSheet.show(fragmentManager!!, "progressBar")
-        }
 
-        getPhotosRequestSingle(URL + item.link).observeOn(AndroidSchedulers.mainThread())
-            .subscribeOn(Schedulers.io())
-            .subscribe( { jsonArray ->
+        /*
+        *  jsonObject.put("chapterName", element1.text())
+            jsonObject.put("chapterNumber", chapterNumber)
+            jsonObject.put("volumeNumber", currentVolumeNumber)
+            jsonObject.put("link", link)
+        *
+        * */
 
-                val imageListJson = JSONArray()
+        val intent = Intent(activity,MangaReaderActivity::class.java)
+        intent.putExtra("selectedChapterIndex",item.chapterNumber)
+        intent.putExtra("chapterArray",chapterJsonArray.toString())
+        intent.putExtra("mangaURL",URL)
 
-                for (index in 0..(jsonArray.length()-1)) {
-                    val jsonTemp = jsonArray.getJSONArray(index)
-                    val link = jsonTemp.get(1).toString()+jsonTemp.get(2).toString()
+        startActivity(intent)
 
-                    imageListJson.put(link)
-                }
+    }
 
-                val intent = Intent(activity,MangaReaderActivity::class.java)
-                intent.putExtra("chapterName",item.chapterName)
-                intent.putExtra("imageList",imageListJson.toString())
+    fun showProgressBar() {
+        sourcesProgress.visibility = View.VISIBLE
+    }
 
-                if (progressBottomSheet.isAdded)
-                    progressBottomSheet.dismissAllowingStateLoss()
-
-                startActivity(intent)
-            }, { error ->
-                Log.d("Photos error",error.localizedMessage)
-            })
-
-
-
-        /*Handler().postDelayed({
-            val imageJsonArray = SiteWorker.getMangaImageList(URL + item.link)
-            val imageListJson = JSONArray()
-
-            for (index in 0..(imageJsonArray.length()-1)) {
-                val jsonTemp = imageJsonArray.getJSONArray(index)
-                val link = jsonTemp.get(1).toString()+jsonTemp.get(2).toString()
-
-                imageListJson.put(link)
-            }
-
-            if (progressBottomSheet.isAdded && progressBottomSheet.isVisible)
-                progressBottomSheet.dismissAllowingStateLoss()
-
-            val intent = Intent(activity,MangaReaderActivity::class.java)
-            intent.putExtra("chapterName",item.chapterName)
-            intent.putExtra("imageList",imageListJson.toString())
-            startActivity(intent)
-        },100)*/
+    fun dismissProgressBar() {
+        sourcesProgress.visibility = View.GONE
     }
 
     companion object {
@@ -204,12 +180,6 @@ class MangaSourcesFragment : androidx.fragment.app.Fragment(), OnExpandableItemC
         }
     }
 
-    fun getPhotosRequestSingle(url: String) : Single<JSONArray> {
-        return Single.create<JSONArray> { observer ->
-            val jsonArray = SiteWorker.getMangaImageList(url)
-            observer.onSuccess(jsonArray)
-        }
-    }
 
 
     internal inner class CustomDivider(val mDivider: Drawable, val topOffset: Int, val bottomOffset: Int) : RecyclerView.ItemDecoration() {
