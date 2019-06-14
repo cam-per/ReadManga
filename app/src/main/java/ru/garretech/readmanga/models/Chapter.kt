@@ -8,7 +8,7 @@ class Chapter(name : String, val chapterNumber : Int, val volumeNumber: Int, val
         return TYPE
     }
 
-    val chapterName : String = name.substring(name.indexOf("- ") + 2)
+    val chapterTitleName = "$chapterNumber. $name"
 
     companion object {
         const val TYPE = 1

@@ -92,15 +92,18 @@ class MangaReaderActivity : AppCompatActivity(), OnViewPagerClickListener, PageP
         * path :
         *
         * */
-        val chapterList1 = chapterJsonArray
+        val selectedChapter = chapterJsonArray[selectedChapterIndex] as JSONObject
+        val chapterName = selectedChapter.getString("volumeNumber") + "-" +
+                        selectedChapter.getString("chapterNumber")  + " " +
+                        selectedChapter.getString("chapterName")
 
-        title = (chapterJsonArray[selectedChapterIndex] as JSONObject).getString("chapterName")
+        title = chapterName
 
         mVisible = true
 
 
         showProgressBar()
-        getPhotosRequestSingle(mangaURL + (this.chapterJsonArray[selectedChapterIndex] as JSONObject).getString("link")).observeOn(AndroidSchedulers.mainThread())
+        getPhotosRequestSingle(mangaURL + selectedChapter.getString("link")).observeOn(AndroidSchedulers.mainThread())
             .subscribeOn(Schedulers.io())
             .subscribe({ jsonArray ->
 
@@ -265,7 +268,11 @@ class MangaReaderActivity : AppCompatActivity(), OnViewPagerClickListener, PageP
             selectedChapterIndex--
             val newChapter = chapterJsonArray[selectedChapterIndex] as JSONObject
 
-            title = newChapter.getString("chapterName")
+            val chapterName = newChapter.getString("volumeNumber") + "-" +
+                    newChapter.getString("chapterNumber")  + " " +
+                    newChapter.getString("chapterName")
+
+            title = chapterName
 
             prepareImageSet(mangaURL, newChapter.getString("link"))
         }
@@ -277,7 +284,11 @@ class MangaReaderActivity : AppCompatActivity(), OnViewPagerClickListener, PageP
             selectedChapterIndex++
             val newChapter = chapterJsonArray[selectedChapterIndex] as JSONObject
 
-            title = newChapter.getString("chapterName")
+            val chapterName = newChapter.getString("volumeNumber") + "-" +
+                    newChapter.getString("chapterNumber")  + " " +
+                    newChapter.getString("chapterName")
+
+            title = chapterName
 
             prepareImageSet(mangaURL, newChapter.getString("link"))
 

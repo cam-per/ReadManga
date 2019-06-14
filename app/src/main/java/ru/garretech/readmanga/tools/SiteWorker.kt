@@ -689,6 +689,7 @@ class SiteWorker {
 
                 val chaptersList = JSONArray()
                 val pattern = Pattern.compile("(\\d+)\\s-\\s(\\d+)")
+                val patternChapterName = Pattern.compile("\\s\\w*\\s(.*\$)")
                 val ADULT_PREFIX = "?mtr=1"
                 val adapterList: ArrayList<MultiItemEntity> = ArrayList<MultiItemEntity>()
                 val pageDownloader = PageDownloader()
@@ -708,7 +709,7 @@ class SiteWorker {
                     var currentVolume: Volume? = null
 
                     for (element1 in elements) {
-                        val matcher = pattern.matcher(element1.text())
+                        var matcher = pattern.matcher(element1.text())
 
                         if (matcher.find()) {
                             val currentVolumeNumber = (matcher.group(1) ?: "0").toInt()
@@ -722,17 +723,27 @@ class SiteWorker {
                             }
 
 
-                            val chapterNumber = (matcher.group(2) ?: "0").toInt()
+                            val chapterNumber = index
                             var link = element1.attr("value")
                             link = link.substring(URL.length)
 
-                            var currentChapter = Chapter(element1.text(), chapterNumber, currentVolumeNumber, link)
+                            matcher = pattern.matcher(element1.text())
+
+                            var chapterName = element1.text().substring(element1.text().lastIndexOf("- ") + 3)
+                            chapterName = chapterName.substring(chapterName.indexOf(" ") + 1)
+
+                            /*if (matcher.find())
+                                chapterName = matcher.group(1)
+                            else
+                                chapterName = element1.text()*/
+
+                            var currentChapter = Chapter(chapterName, chapterNumber, currentVolumeNumber, link)
 
                             currentVolume?.addSubItem(currentChapter)
 
                             val jsonObject = JSONObject()
 
-                            jsonObject.put("chapterName", element1.text())
+                            jsonObject.put("chapterName", chapterName)
                             jsonObject.put("chapterNumber", chapterNumber)
                             jsonObject.put("volumeNumber", currentVolumeNumber)
                             jsonObject.put("link", link)

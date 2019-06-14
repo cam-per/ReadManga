@@ -40,7 +40,7 @@ class ExpandableItemAdapter(data : List<MultiItemEntity>) : BaseMultiItemQuickAd
             }
             Chapter.TYPE -> {
                 val transformedItem = item as Chapter
-                helper.setText(R.id.chapterNameText,transformedItem.chapterName)
+                helper.setText(R.id.chapterNameText,transformedItem.chapterTitleName)
 
                 helper.itemView.setOnClickListener {
                     if (onExpandableItemClickListener != null) {
