@@ -72,7 +72,7 @@ class MangaAboutActivity : AppCompatActivity(), MangaAboutFragment.OnFragmentInt
             if (mangaInfoString == null)
                 throw NullPointerException()
 
-            mangaInfo = JSONObject(mangaInfoString!!)
+            mangaInfo = JSONObject(mangaInfoString)
 
             this.title = mangaInfo.getString("title")
             this.genres = mangaInfo.getString("genres")

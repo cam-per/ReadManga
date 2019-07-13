@@ -42,15 +42,15 @@ class SortingFragment : DialogFragment() {
                               savedInstanceState: Bundle?): View? {
         val view = inflater.inflate(R.layout.fragment_sorting, container, false)
         var selectedPosition : Int
-        categoriesRadioGroup = view.findViewById<CustomTableLayout>(R.id.categoriesRadioGroup)
-        sortingRadioGroup = view.findViewById<CustomTableLayout>(R.id.sortingRadioGroup)
-        filterRadioGroup = view.findViewById<CustomTableLayout>(R.id.filterRadioGroup)
-        agesRadioGroup = view.findViewById<CustomTableLayout>(R.id.ageRadioGroup)
+        categoriesRadioGroup = view.findViewById(R.id.categoriesRadioGroup)
+        sortingRadioGroup = view.findViewById(R.id.sortingRadioGroup)
+        filterRadioGroup = view.findViewById(R.id.filterRadioGroup)
+        agesRadioGroup = view.findViewById(R.id.ageRadioGroup)
 
 
 
         var jsonObject = paramsJSONArray.getJSONObject(CATEGORIES_INDEX)
-        optionsMap.put("categories",jsonObject)
+        optionsMap["categories"] = jsonObject
         selectedPosition = jsonObject.getString("selectedPosition").toInt()
         var namesJson = jsonObject.getJSONArray("translatedValues")
 
@@ -71,7 +71,7 @@ class SortingFragment : DialogFragment() {
 
 
         jsonObject = paramsJSONArray.getJSONObject(SORTING_INDEX)
-        optionsMap.put("sorting",jsonObject)
+        optionsMap["sorting"] = jsonObject
         selectedPosition = jsonObject.getString("selectedPosition").toInt()
         namesJson = jsonObject.getJSONArray("translatedValues")
 
@@ -92,7 +92,7 @@ class SortingFragment : DialogFragment() {
 
 
         jsonObject = paramsJSONArray.getJSONObject(FILTER_INDEX)
-        optionsMap.put("filter",jsonObject)
+        optionsMap["filter"] = jsonObject
         selectedPosition = jsonObject.getString("selectedPosition").toInt()
         namesJson = jsonObject.getJSONArray("translatedValues")
 
@@ -113,7 +113,7 @@ class SortingFragment : DialogFragment() {
 
 
         jsonObject = paramsJSONArray.getJSONObject(AGES_INDEX)
-        optionsMap.put("others",jsonObject)
+        optionsMap["others"] = jsonObject
         selectedPosition = jsonObject.getString("selectedPosition").toInt()
         namesJson = jsonObject.getJSONArray("translatedValues")
 
@@ -140,30 +140,14 @@ class SortingFragment : DialogFragment() {
         return view
     }
 
-    override fun onAttach(context: Context) {
-        super.onAttach(context)
-        if (context is OnFragmentInteractionListener) {
-            listener = context
-        } else {
-            throw RuntimeException(context.toString() + " must implement OnFragmentInteractionListener")
-        }
-    }
 
-    override fun onDetach() {
-        super.onDetach()
-        listener = null
-    }
 
-    interface OnFragmentInteractionListener {
-        fun onFragmentInteraction(result : Map<String,Any>)
-    }
-
-    fun onSortButtonClick() {
+    private fun onSortButtonClick() {
         listener?.onFragmentInteraction(formQueryString())
         dismiss()
     }
 
-    fun formQueryString() : Map<String,Any> {
+    private fun formQueryString() : Map<String,Any> {
         /* 1. Собрать выбранные элементы из каждого поля
          * 2. Если зайдействованы одновременно элементы из полей страна и прочее, выбрать прочее (для начала)
          * 3. Выяснить, есть ли среди выбранных префиксы
@@ -235,13 +219,33 @@ class SortingFragment : DialogFragment() {
             paramsMap[selectedKey] = selectedValue
         }
 
-        resultingMap.put("path",prefix.toString())
+        resultingMap["path"] = prefix.toString()
 
-        resultingMap.put("params",paramsMap)
+        resultingMap["params"] = paramsMap
 
         return resultingMap
     }
 
+
+    override fun onAttach(context: Context) {
+        super.onAttach(context)
+        if (context is OnFragmentInteractionListener) {
+            listener = context
+        } else {
+            throw RuntimeException("$context must implement OnFragmentInteractionListener")
+        }
+    }
+
+    override fun onDetach() {
+        super.onDetach()
+        listener = null
+    }
+
+
+
+    interface OnFragmentInteractionListener {
+        fun onFragmentInteraction(result : Map<String,Any>)
+    }
 
     companion object {
 

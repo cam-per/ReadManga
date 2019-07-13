@@ -4,7 +4,6 @@ import android.app.Activity
 import android.app.SearchManager
 import android.content.Context
 import android.content.Intent
-import android.graphics.Bitmap
 import android.net.ConnectivityManager
 import android.os.Bundle
 import com.google.android.material.navigation.NavigationView
@@ -19,6 +18,7 @@ import android.view.MenuItem
 import android.view.View
 import android.widget.RelativeLayout
 import android.widget.Toast
+import androidx.lifecycle.ViewModelProviders
 import androidx.recyclerview.widget.GridLayoutManager
 import androidx.swiperefreshlayout.widget.SwipeRefreshLayout
 
@@ -28,13 +28,11 @@ import org.json.JSONException
 import org.json.JSONObject
 
 
-import java.io.FileNotFoundException
 import java.util.ArrayList
 import java.util.HashMap
 import java.util.concurrent.ExecutionException
 import io.reactivex.Completable
 import io.reactivex.CompletableObserver
-import io.reactivex.Observable
 import io.reactivex.Single
 import io.reactivex.android.schedulers.AndroidSchedulers
 import io.reactivex.disposables.CompositeDisposable
@@ -44,6 +42,7 @@ import io.reactivex.schedulers.Schedulers
 import kotlinx.android.synthetic.main.activity_main.*
 import kotlinx.android.synthetic.main.toolbar.*
 import org.json.JSONArray
+import ru.garretech.readmanga.DisposableManager
 import ru.garretech.readmanga.R
 import ru.garretech.readmanga.Settings
 import ru.garretech.readmanga.adapters.RecyclerAdapter
@@ -53,8 +52,8 @@ import ru.garretech.readmanga.fragments.DisclaimerFragment
 import ru.garretech.readmanga.fragments.ProgressBottomSheet
 import ru.garretech.readmanga.fragments.SortingFragment
 import ru.garretech.readmanga.models.Manga
-import ru.garretech.readmanga.tools.ImageDownloader
 import ru.garretech.readmanga.tools.SiteWorker
+import ru.garretech.readmanga.viewmodels.MainActivityViewModel
 
 class MainActivity : AppCompatActivity(), BaseQuickAdapter.OnItemClickListener, MenuItem.OnActionExpandListener, NavigationView.OnNavigationItemSelectedListener, BaseQuickAdapter.RequestLoadMoreListener, SwipeRefreshLayout.OnRefreshListener, SortingFragment.OnFragmentInteractionListener {
 
@@ -66,44 +65,28 @@ class MainActivity : AppCompatActivity(), BaseQuickAdapter.OnItemClickListener, 
     private lateinit var appDataSource: AppDataSource
     private lateinit var mAdViewContainer: RelativeLayout
     private lateinit var menu: Menu
-    private var observable: Observable<List<Manga>>? = null
     private val sortingMenuItem by lazy { menu.findItem(R.id.action_sort) }
     private var bag : CompositeDisposable = CompositeDisposable()
+    private lateinit var viewModel: MainActivityViewModel
 
-    private val GENRES_CODE = 15
-
-    internal enum class ACTIVITY_STATE {
-        ONLINE,
-        FAVORITES,
-        LOST_CONNECTION
-    }
 
     private var activityState = ACTIVITY_STATE.LOST_CONNECTION
 
-
-    private val getListMangasObserver by lazy {
+    val getMangaListObserver by lazy {
         object : CompletableObserver {
             override fun onSubscribe(d: Disposable) {}
 
             override fun onComplete() {
-                bag.add(observable!!
-                        .subscribeOn(Schedulers.io())
-                        .map { movies ->
-                            for (movie in movies) {
-                                var image: Bitmap?
-                                try {
-                                    image = SiteWorker.getCachedImage(applicationContext, movie.mangaImageURL)
-                                } catch (e: FileNotFoundException) {
-                                    val imageDownloader = ImageDownloader()
-                                    image = imageDownloader.execute(movie.mangaImageURL).get()
-                                    SiteWorker.saveImage(applicationContext, image!!, movie.mangaImageURL)
-                                }
-                                movie.image = image
-                            }
-                            movies
+                DisposableManager.add(viewModel.observable!!
+                    .subscribeOn(Schedulers.io())
+                    /*.map { movies ->
+                        for (movie in movies) {
+                            movie.image = ImageDownloader1(this@MainActivity).execute(movie.mangaImageURL).get()
                         }
-                        .observeOn(AndroidSchedulers.mainThread())
-                        .subscribe(updateListConsumer))
+                        movies
+                    }*/
+                    .observeOn(AndroidSchedulers.mainThread())
+                    .subscribe(updateListConsumer))
             }
             override fun onError(e: Throwable) {
                 Log.d("List observer", "Failed to get manga list")
@@ -111,35 +94,37 @@ class MainActivity : AppCompatActivity(), BaseQuickAdapter.OnItemClickListener, 
         }
     }
 
-    private val getOnLoadMoreObserver by lazy {
+
+    val getOnLoadMoreObserver by lazy {
         object : CompletableObserver {
             override fun onSubscribe(d: Disposable) {}
 
             override fun onComplete() {
-                bag.add(observable!!
-                        .subscribeOn(Schedulers.io())
-                        .map { movies ->
-                            for (movie in movies) {
-                                var image: Bitmap?
-                                try {
-                                    image = SiteWorker.getCachedImage(applicationContext, movie.mangaImageURL)
-                                } catch (e: FileNotFoundException) {
-                                    val imageDownloader = ImageDownloader()
-                                    image = imageDownloader.execute(movie.mangaImageURL).get()
-                                    SiteWorker.saveImage(applicationContext, image!!, movie.mangaImageURL)
-                                }
-                                movie.image = image
-                            }
-                            movies
+                DisposableManager.add(viewModel.observable!!
+                    .subscribeOn(Schedulers.io())
+                    /*.map { movies ->
+                        for (movie in movies) {
+                            movie.image = ImageDownloader1(this@MainActivity).execute(movie.mangaImageURL).get()
                         }
-                        .observeOn(AndroidSchedulers.mainThread())
-                        .subscribe(onLoadMoreConsumer))
+                        movies
+                    }*/
+                    .observeOn(AndroidSchedulers.mainThread())
+                    .subscribe(onLoadMoreConsumer))
             }
             override fun onError(e: Throwable) {
                 Log.d("ONLOAD MORE OBSERVER", "Failed to perform on load more request")
             }
         }
     }
+
+    private fun getMangaRequestSingle(url: String) =
+        Single.create<JSONObject> { observer ->
+            val jsonObject = SiteWorker.getMangaInfo(url)
+            if (jsonObject.length() != 0)
+                observer.onSuccess(jsonObject)
+            else
+                observer.onError(NullPointerException())
+        }
 
     private val onLoadMoreConsumer by lazy {
         Consumer<List<Manga>> { movies ->
@@ -164,6 +149,8 @@ class MainActivity : AppCompatActivity(), BaseQuickAdapter.OnItemClickListener, 
         super.onCreate(savedInstanceState)
         setContentView(R.layout.activity_main)
 
+        viewModel = ViewModelProviders.of(this).get(MainActivityViewModel::class.java)
+
         progressBottomSheet = ProgressBottomSheet()
         appDataSource = AppDataSource(applicationContext)
         mAdViewContainer = relativeContainer
@@ -187,7 +174,7 @@ class MainActivity : AppCompatActivity(), BaseQuickAdapter.OnItemClickListener, 
         drawerLayout.addDrawerListener(toggle)
         toggle.syncState()
 
-        mangaAdapter = RecyclerAdapter(R.layout.fragment_manga, ArrayList())
+        mangaAdapter = RecyclerAdapter(R.layout.cardview_manga, ArrayList())
         movieListRecyclerView!!.adapter = mangaAdapter
         mangaAdapter!!.onItemClickListener = this
         mangaAdapter!!.setOnLoadMoreListener(this, movieListRecyclerView)
@@ -201,7 +188,7 @@ class MainActivity : AppCompatActivity(), BaseQuickAdapter.OnItemClickListener, 
 
             getRequestQueryCompletable(SiteWorker.EDITOR_CHOICE_QUERY)
                 .subscribeOn(Schedulers.io())
-                .subscribe(getListMangasObserver)
+                .subscribe(getMangaListObserver)
         } else showConnectionError()
 
         //refreshBannerAd()
@@ -234,7 +221,7 @@ class MainActivity : AppCompatActivity(), BaseQuickAdapter.OnItemClickListener, 
 
                     getRequestQueryCompletable(SiteWorker.SEARCH_QUERY, SiteWorker.SEARCH_PREFIX, params)
                         .subscribeOn(Schedulers.io())
-                        .subscribe(getListMangasObserver)
+                        .subscribe(getMangaListObserver)
 
                     title = getString(R.string.search_hint) + ": $queryString"
 
@@ -272,13 +259,18 @@ class MainActivity : AppCompatActivity(), BaseQuickAdapter.OnItemClickListener, 
                     }.observeOn(AndroidSchedulers.mainThread())
                         .subscribeOn(Schedulers.io())
                         .subscribe( { jsonArray ->
-                            val sortingFragment = SortingFragment.newInstance(jsonArray,requestQuery?.requestUri()?.toString()!!)
-                            sortingFragment.show(supportFragmentManager, "sortingFragment")
+
+                            if (jsonArray.length() != 0) {
+                                val sortingFragment = SortingFragment.newInstance(jsonArray,requestQuery?.requestUri()?.toString()!!)
+                                sortingFragment.show(supportFragmentManager, "sortingFragment")
+                            }
+                            else
+                                Toast.makeText(applicationContext,"Не удалось загрузить список сортиовок, попробуйте еще раз",Toast.LENGTH_SHORT).show()
 
                             if (progressBottomSheet.isAdded)
                                 progressBottomSheet.dismissAllowingStateLoss()
 
-                        }, { error -> Log.d("Error occured",error.localizedMessage) }))
+                        }, { Log.e("SORTING OBSERVER","Не удалось загрузить список сотрировок",it) }))
                 }
             }
         }
@@ -313,11 +305,11 @@ class MainActivity : AppCompatActivity(), BaseQuickAdapter.OnItemClickListener, 
 
                     getRequestQueryCompletable(SiteWorker.EDITOR_CHOICE_QUERY)
                         .subscribeOn(Schedulers.io())
-                        .subscribe(getListMangasObserver)
+                        .subscribe(getMangaListObserver)
 
                     title = getString(R.string.editor_choice_title)
 
-                } else showConnectionError();
+                } else showConnectionError()
             }
             R.id.nav_list -> {
 
@@ -331,11 +323,11 @@ class MainActivity : AppCompatActivity(), BaseQuickAdapter.OnItemClickListener, 
 
                     getRequestQueryCompletable(SiteWorker.SIMPLE_QUERY, SiteWorker.LIST_PREFIX)
                         .subscribeOn(Schedulers.io())
-                        .subscribe(getListMangasObserver!!)
+                        .subscribe(getMangaListObserver)
 
                     title = getString(R.string.list_manga_title)
 
-                } else showConnectionError();
+                } else showConnectionError()
             }
 
             R.id.nav_random -> {
@@ -359,11 +351,11 @@ class MainActivity : AppCompatActivity(), BaseQuickAdapter.OnItemClickListener, 
                                 progressBottomSheet.dismissAllowingStateLoss()
 
                             startActivity(intent)
-                        }, { error -> Log.d("Error occured","Cant' perform manga info request")
+                        }, { Log.e("MANGA INFO OBSERVER","Cant' perform manga info request", it)
                         }))
 
 
-                } else showConnectionError();
+                } else showConnectionError()
             }
 
             R.id.nav_genres -> {
@@ -385,17 +377,17 @@ class MainActivity : AppCompatActivity(), BaseQuickAdapter.OnItemClickListener, 
                     } catch (e: NullPointerException) {
                         showConnectionError()
                     }
-                } else showConnectionError();
+                } else showConnectionError()
             }
             R.id.nav_favourites -> {
 
                 //List<Movie> favoritesMovies = appDataSource.getListOfFavorites();
                 activityState = ACTIVITY_STATE.FAVORITES
                 Completable.fromCallable {
-                    observable = appDataSource!!.listOfFavorites
+                    viewModel.observable = appDataSource.listOfFavorites
                     null
                 }.subscribeOn(Schedulers.io())
-                        .subscribe(getListMangasObserver)
+                        .subscribe(getMangaListObserver)
 
                 title = getString(R.string.action_favorite)
             }
@@ -423,6 +415,8 @@ class MainActivity : AppCompatActivity(), BaseQuickAdapter.OnItemClickListener, 
     }
 
     override fun onActivityResult(requestCode: Int, resultCode: Int, data: Intent?) {
+        super.onActivityResult(requestCode, resultCode, data)
+
         if (requestCode == GENRES_CODE) {
             if (resultCode == Activity.RESULT_OK) {
                 val resultPrefix = data!!.getStringExtra("link")
@@ -434,9 +428,9 @@ class MainActivity : AppCompatActivity(), BaseQuickAdapter.OnItemClickListener, 
 
                 getRequestQueryCompletable(SiteWorker.SIMPLE_QUERY, resultPrefix)
                     .subscribeOn(Schedulers.io())
-                    .subscribe(getListMangasObserver)
+                    .subscribe(getMangaListObserver)
 
-                setTitle(genreName.substring(0, 1).toUpperCase() + genreName.substring(1))
+                title = genreName.substring(0, 1).toUpperCase() + genreName.substring(1)
             }
         }
     }
@@ -492,14 +486,14 @@ class MainActivity : AppCompatActivity(), BaseQuickAdapter.OnItemClickListener, 
             val params = result.get("params") as HashMap<String,String>
             val completable : Completable
             if (params.size == 0)
-                completable = getRequestQueryCompletable(SiteWorker.SIMPLE_QUERY, result.get("path") as String)
+                completable = getRequestQueryCompletable(SiteWorker.SIMPLE_QUERY, result["path"] as String)
             else
-                completable = getRequestQueryCompletable(SiteWorker.SIMPLE_QUERY, result.get("path") as String, params)
+                completable = getRequestQueryCompletable(SiteWorker.SIMPLE_QUERY, result["path"] as String, params)
 
             completable.subscribeOn(Schedulers.io())
-                .subscribe(getListMangasObserver!!)
+                .subscribe(getMangaListObserver)
 
-        } else showConnectionError();
+        } else showConnectionError()
     }
 
 
@@ -511,7 +505,7 @@ class MainActivity : AppCompatActivity(), BaseQuickAdapter.OnItemClickListener, 
                 progressBottomSheet.show(supportFragmentManager, "progressBar")
             }
 
-            bag.add(getMangaRequestSingle(selectedManga.url)
+            DisposableManager.add(getMangaRequestSingle(selectedManga.url)
                     .observeOn(AndroidSchedulers.mainThread())
                     .subscribeOn(Schedulers.io())
                     .subscribe( { json ->
@@ -535,7 +529,7 @@ class MainActivity : AppCompatActivity(), BaseQuickAdapter.OnItemClickListener, 
                             progressBottomSheet.dismissAllowingStateLoss()
 
                         startActivity(intent)
-                    }, { error -> Log.d("Error occured","Can't perform manga info requestk") }))
+                    }, { Log.e("MANGA INFO OBSERVER","Can't perform manga info request", it) }))
         } else showConnectionError()
     }
 
@@ -552,7 +546,7 @@ class MainActivity : AppCompatActivity(), BaseQuickAdapter.OnItemClickListener, 
 
                          Completable.fromCallable {
                              try {
-                                 observable = requestQuery!!.nextQuery
+                                 viewModel.observable = requestQuery!!.nextQuery
                              } catch (e: InterruptedException) {
                                  e.printStackTrace()
                              } catch (e: ExecutionException) {
@@ -596,9 +590,9 @@ class MainActivity : AppCompatActivity(), BaseQuickAdapter.OnItemClickListener, 
                             if (requestQuery != null)
                                 requestQuery!!.resetOffset()
                             else
-                                requestQuery = mSiteWorker!!.RequestQuery(applicationContext, SiteWorker.EDITOR_CHOICE_QUERY)
+                                requestQuery = mSiteWorker.RequestQuery(applicationContext, SiteWorker.EDITOR_CHOICE_QUERY)
 
-                            observable = requestQuery!!.nextQuery
+                            viewModel.observable = requestQuery!!.nextQuery
                         } catch (e: InterruptedException) {
                             e.printStackTrace()
                         } catch (e: ExecutionException) {
@@ -609,16 +603,16 @@ class MainActivity : AppCompatActivity(), BaseQuickAdapter.OnItemClickListener, 
 
                         null
                     }.subscribeOn(Schedulers.io())
-                            .subscribe(getListMangasObserver)
+                    .subscribe(getMangaListObserver)
                 } else showConnectionError()
             }
             ACTIVITY_STATE.FAVORITES -> {
                 activityState = ACTIVITY_STATE.FAVORITES
                 Completable.fromCallable {
-                    observable = appDataSource!!.listOfFavorites
+                    viewModel.observable = appDataSource.listOfFavorites
                     null
                 }.subscribeOn(Schedulers.io())
-                .subscribe(getListMangasObserver)
+                .subscribe(getMangaListObserver)
             }
         }
     }
@@ -644,28 +638,28 @@ class MainActivity : AppCompatActivity(), BaseQuickAdapter.OnItemClickListener, 
 
     internal fun hasConnection(): Boolean {
         val cm = getSystemService(Context.CONNECTIVITY_SERVICE) as ConnectivityManager
-        val ni = cm.getActiveNetworkInfo()
+        val ni = cm.activeNetworkInfo
         return ni != null && ni.isConnected
     }
 
-    internal fun showSortingMenu() {
+    private fun showSortingMenu() {
         if (!sortingMenuItem.isVisible)
             sortingMenuItem.isVisible = true
     }
 
-    internal fun dismissSortingMenu() {
+    private fun dismissSortingMenu() {
         sortingMenuItem.isVisible = false
     }
 
-    fun firstStartDisclaimer() {
+    private fun firstStartDisclaimer() {
         val mSettings = getSharedPreferences(Settings.APP_PREFERENCES, Context.MODE_PRIVATE)
         val APP_FIRST_RUN = "first_run_check"
         var isFirstRun = mSettings.getBoolean(APP_FIRST_RUN,true)
 
         if (isFirstRun) {
-            val editor = mSettings.edit();
-            editor.putBoolean(APP_FIRST_RUN, false);
-            editor.apply();
+            val editor = mSettings.edit()
+            editor.putBoolean(APP_FIRST_RUN, false)
+            editor.apply()
 
             val disclaimerFragment = DisclaimerFragment()
             disclaimerFragment.show(supportFragmentManager, "disclaimer")
@@ -676,8 +670,8 @@ class MainActivity : AppCompatActivity(), BaseQuickAdapter.OnItemClickListener, 
     @Throws(InterruptedException::class, ExecutionException::class, NullPointerException::class)
     fun getRequestQueryCompletable(requestType : Int, path : String, params : HashMap<String,String>) : Completable {
         return Completable.fromCallable {
-            requestQuery = mSiteWorker!!.RequestQuery(applicationContext, requestType, path, params)
-            observable = requestQuery!!.nextQuery
+            requestQuery = mSiteWorker.RequestQuery(applicationContext, requestType, path, params)
+            viewModel.observable = requestQuery!!.nextQuery
             null
         }
     }
@@ -685,8 +679,8 @@ class MainActivity : AppCompatActivity(), BaseQuickAdapter.OnItemClickListener, 
     @Throws(InterruptedException::class, ExecutionException::class, NullPointerException::class)
     fun getRequestQueryCompletable(requestType : Int, path : String) : Completable {
         return Completable.fromCallable {
-            requestQuery = mSiteWorker!!.RequestQuery(applicationContext, requestType, path)
-            observable = requestQuery!!.nextQuery
+            requestQuery = mSiteWorker.RequestQuery(applicationContext, requestType, path)
+            viewModel.observable = requestQuery!!.nextQuery
             null
         }
     }
@@ -694,19 +688,23 @@ class MainActivity : AppCompatActivity(), BaseQuickAdapter.OnItemClickListener, 
     @Throws(InterruptedException::class, ExecutionException::class, NullPointerException::class)
     fun getRequestQueryCompletable(requestType : Int) : Completable {
         return Completable.fromCallable {
-            requestQuery = mSiteWorker!!.RequestQuery(applicationContext, requestType)
-            observable = requestQuery!!.nextQuery
+            requestQuery = mSiteWorker.RequestQuery(applicationContext, requestType)
+            viewModel.observable = requestQuery!!.nextQuery
             null
         }
     }
 
-    fun getMangaRequestSingle(url: String) : Single<JSONObject> {
-        return Single.create<JSONObject> { observer ->
-            val jsonObject = SiteWorker.getMangaInfo(url)
-            if (jsonObject.length() != 0)
-                observer.onSuccess(jsonObject)
-            else
-                observer.onError(NullPointerException())
+    companion object {
+
+        val GENRES_CODE = 15
+
+        internal enum class ACTIVITY_STATE {
+            ONLINE,
+            FAVORITES,
+            LOST_CONNECTION
         }
+
     }
+
+
 }

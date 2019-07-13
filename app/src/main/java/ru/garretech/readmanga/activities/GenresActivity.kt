@@ -54,7 +54,7 @@ class GenresActivity : AppCompatActivity() {
                 }
             }
 
-            genresListView.setAdapter(arrayAdapter)
+            genresListView.adapter = arrayAdapter
             genresListView.onItemClickListener = AdapterView.OnItemClickListener { _, _, i, _ ->
                 try {
                     val data = Intent()

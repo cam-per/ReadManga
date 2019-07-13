@@ -101,56 +101,7 @@ class MangaReaderActivity : AppCompatActivity(), OnViewPagerClickListener, PageP
 
         mVisible = true
 
-
-        showProgressBar()
-        getPhotosRequestSingle(mangaURL + selectedChapter.getString("link")).observeOn(AndroidSchedulers.mainThread())
-            .subscribeOn(Schedulers.io())
-            .subscribe({ jsonArray ->
-
-                val imageListJson = JSONArray()
-
-                for (index in 0 until jsonArray.length()) {
-                    val jsonTemp = jsonArray.getJSONArray(index)
-                    val link = jsonTemp.get(1).toString() + jsonTemp.get(2).toString()
-
-                    imageListJson.put(link)
-                }
-
-                adapter = ImageScrollAdapter(this,imageListJson)
-                pageCount.text = imageListJson.length().toString()
-                updateCurrentPageText(1)
-                adapter.setCustomOnClickListener(this)
-                mangaContentView.adapter = adapter
-
-                dismissProgressBar()
-
-                //if (progressBottomSheet.isAdded)
-                //   progressBottomSheet.dismissAllowingStateLoss()
-
-                mangaContentView.setOnPageChangeListener(object : ViewPager.OnPageChangeListener {
-                    override fun onPageScrollStateChanged(state: Int) {
-
-                    }
-
-                    override fun onPageScrolled(position: Int, positionOffset: Float, positionOffsetPixels: Int) {
-                        updateCurrentPageText(position+1)
-                    }
-
-                    override fun onPageSelected(position: Int) {
-
-                    }
-
-                })
-
-                pageSelectorLayout.setOnClickListener {
-                    val pagePicker = PagePickerFragment.newInstance(mangaContentView.currentItem+1,imageListJson.length())
-                    pagePicker.view?.setBackgroundResource(android.R.color.transparent)
-                    pagePicker.show(supportFragmentManager,"pagePicker")
-                }
-
-            }, { error ->
-                Log.d("Photos error", error.localizedMessage)
-            })
+        prepareImageSet(mangaURL,selectedChapter.getString("link"))
 
 
     }
@@ -168,7 +119,7 @@ class MangaReaderActivity : AppCompatActivity(), OnViewPagerClickListener, PageP
 
 
 
-    fun toggle() {
+    private fun toggle() {
         if (mVisible) {
             hide()
         } else {
@@ -206,14 +157,15 @@ class MangaReaderActivity : AppCompatActivity(), OnViewPagerClickListener, PageP
 
     companion object {
 
-        private val AUTO_HIDE = true
+        private const val AUTO_HIDE = true
 
-        private val AUTO_HIDE_DELAY_MILLIS = 3000
+        private const val AUTO_HIDE_DELAY_MILLIS = 3000
 
-        private val UI_ANIMATION_DELAY = 300
+        private const val UI_ANIMATION_DELAY = 300
     }
 
-    fun prepareImageSet(mangaURL : String, path : String) {
+    private fun prepareImageSet(mangaURL : String, path : String) {
+        showProgressBar()
         mangaContentView.removeAllViews()
         getPhotosRequestSingle(mangaURL + path).observeOn(AndroidSchedulers.mainThread())
             .subscribeOn(Schedulers.io())
@@ -236,30 +188,50 @@ class MangaReaderActivity : AppCompatActivity(), OnViewPagerClickListener, PageP
                 mangaContentView.adapter = adapter
                 mangaContentView.invalidate()
 
+                mangaContentView.setOnPageChangeListener(object : ViewPager.OnPageChangeListener {
+                    override fun onPageScrollStateChanged(state: Int) {
+
+                    }
+
+                    override fun onPageScrolled(position: Int, positionOffset: Float, positionOffsetPixels: Int) {
+                        updateCurrentPageText(position+1)
+                    }
+
+                    override fun onPageSelected(position: Int) {
+
+                    }
+
+                })
+
+                pageSelectorLayout.setOnClickListener {
+                    val pagePicker = PagePickerFragment.newInstance(mangaContentView.currentItem+1,imageListJson.length())
+                    pagePicker.view?.setBackgroundResource(android.R.color.transparent)
+                    pagePicker.show(supportFragmentManager,"pagePicker")
+                }
 
                 dismissProgressBar()
             }, { error ->
-                Log.d("Imagelist observer", "Error getting manga image list")
+                Log.e("IMAGELIST OBSERVER", "Ошибка получения списка картинок", error)
             })
     }
 
-    fun getPhotosRequestSingle(url: String) : Single<JSONArray> {
-        return Single.create<JSONArray> { observer ->
+    private fun getPhotosRequestSingle(url: String) : Single<JSONArray> {
+        return Single.create { observer ->
             val jsonArray = SiteWorker.getMangaImageList(url)
             observer.onSuccess(jsonArray)
         }
     }
 
-    fun showProgressBar() {
+    private fun showProgressBar() {
         readerProgress.visibility = View.VISIBLE
     }
 
-    fun dismissProgressBar() {
+    private fun dismissProgressBar() {
         readerProgress.visibility = View.GONE
     }
 
     fun updateCurrentPageText(value : Int) {
-        currentPageText.setText(value.toString())
+        currentPageText.text = value.toString()
     }
 
     fun previousChapter(view: View) {

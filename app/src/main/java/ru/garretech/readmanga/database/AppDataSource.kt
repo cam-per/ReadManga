@@ -12,10 +12,10 @@ import ru.garretech.readmanga.models.Manga
 class AppDataSource(context: Context) {
     private val appDatabase : AppDatabase by lazy { AppDatabase.getInstance(context)!! }
     private val mangaDAO: MangaDAO by lazy {
-        appDatabase?.movieDAO()
+        appDatabase.movieDAO()
     }
     private val favoritesDAO: FavoritesDAO by lazy {
-        appDatabase?.favoritesDAO()
+        appDatabase.favoritesDAO()
     }
 
     val allMovies: List<Manga>

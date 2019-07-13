@@ -20,17 +20,18 @@
             android:layout_below="@+id/toolbarActionBar">
 
         <androidx.swiperefreshlayout.widget.SwipeRefreshLayout
+                android:id="@+id/swipeContainer"
                 android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:id="@+id/swipeContainer" android:paddingLeft="10dp" android:paddingRight="10dp"
-                android:paddingEnd="10dp" android:paddingStart="10dp">
+                android:layout_height="wrap_content">
 
             <androidx.recyclerview.widget.RecyclerView
                     android:id="@+id/movieListRecyclerView"
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
-                    app:layout_behavior="@string/appbar_scrolling_view_behavior"
-            />
+                    android:padding="10dp"
+                    android:clipToPadding="false"
+                    android:overScrollMode="never"
+                    app:layout_behavior="@string/appbar_scrolling_view_behavior" />
 
         </androidx.swiperefreshlayout.widget.SwipeRefreshLayout>
 

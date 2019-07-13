@@ -10,17 +10,14 @@ import android.view.View
 import android.view.ViewGroup
 import android.widget.ImageView
 import android.widget.TextView
+import com.bumptech.glide.Glide
+import com.bumptech.glide.load.resource.drawable.DrawableTransitionOptions
 
 
 import org.json.JSONException
 import org.json.JSONObject
 import ru.garretech.readmanga.R
-import ru.garretech.readmanga.tools.ImageDownloader
-import ru.garretech.readmanga.tools.SiteWorker
 
-import java.io.FileNotFoundException
-import java.io.IOException
-import java.util.concurrent.ExecutionException
 
 
 
@@ -45,8 +42,8 @@ class MangaAboutFragment : androidx.fragment.app.Fragment() {
         super.onCreate(savedInstanceState)
         if (arguments != null) {
 
-            try {
-                image = SiteWorker.getCachedImage(context!!, mangaImageURL!!)
+           /* try {
+                image = SiteWorker.getCachedImage(context!!, mangaImageURL)
             } catch (e: FileNotFoundException) {
                 val imageDownloader = ImageDownloader()
                 try {
@@ -59,7 +56,11 @@ class MangaAboutFragment : androidx.fragment.app.Fragment() {
 
             } catch (e: IOException) {
                 e.printStackTrace()
-            }
+            }*/
+
+
+
+
         }
     }
 
@@ -75,13 +76,21 @@ class MangaAboutFragment : androidx.fragment.app.Fragment() {
         val imageView = view.findViewById<ImageView>(R.id.movie_image_about)
         val mangaDescriptionView = view.findViewById<TextView>(R.id.movie_description_text)
 
-        mangaGenresView.text = getString(R.string.genres_description) + " " + mangaGenres!!
-        mangaProductionCountryView.text = getString(R.string.production_country_description)  + " " +  mangaProduction!!
+        mangaGenresView.text = getString(R.string.genres_description) + " " + mangaGenres
+        mangaProductionCountryView.text = getString(R.string.production_country_description)  + " " + mangaProduction
         mangaChaptersNumberView.text = mangaSeriesNumber
         mangaDurationView.text = mangaDuration
-        mangaAgeView.text = getString(R.string.age_description)  + " " +  mangaAge!!
+        mangaAgeView.text = getString(R.string.age_description)  + " " + mangaAge
         mangaDescriptionView.text = mangaDescription
-        imageView.setImageBitmap(image)
+        //imageView.setImageBitmap(image)
+
+        Glide
+            .with(context!!)
+            .load(mangaImageURL)
+            .fitCenter()
+            .transition(DrawableTransitionOptions.withCrossFade())
+            //.placeholder(R.drawable.loading_spinner)
+            .into(imageView)
 
         return view
     }
@@ -93,12 +102,12 @@ class MangaAboutFragment : androidx.fragment.app.Fragment() {
         }
     }
 
-    override fun onAttach(context: Context?) {
+    override fun onAttach(context: Context) {
         super.onAttach(context)
         if (context is OnFragmentInteractionListener) {
             mListener = context
         } else {
-            throw RuntimeException(context!!.toString() + " must implement OnFragmentInteractionListener")
+            throw RuntimeException("$context must implement OnFragmentInteractionListener")
         }
     }
 

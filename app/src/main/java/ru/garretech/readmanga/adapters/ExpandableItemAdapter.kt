@@ -13,8 +13,8 @@ class ExpandableItemAdapter(data : List<MultiItemEntity>) : BaseMultiItemQuickAd
     var onExpandableItemClickListener : OnExpandableItemClickListener? = null
 
     init {
-        addItemType(Volume.TYPE, R.layout.item_expandable_volume);
-        addItemType(Chapter.TYPE, R.layout.item_expandable_chapter);
+        addItemType(Volume.TYPE, R.layout.item_expandable_volume)
+        addItemType(Chapter.TYPE, R.layout.item_expandable_chapter)
     }
 
 
@@ -31,7 +31,7 @@ class ExpandableItemAdapter(data : List<MultiItemEntity>) : BaseMultiItemQuickAd
 
                 helper.itemView.setOnClickListener {
                     val pos = helper.adapterPosition
-                    if (item.isExpanded()) {
+                    if (item.isExpanded) {
                         collapse(pos)
                     } else {
                         expand(pos)

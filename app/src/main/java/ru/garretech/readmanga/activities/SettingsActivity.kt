@@ -77,10 +77,10 @@ class SettingsActivity : AppCompatPreferenceActivity() {
      * Make sure to deny any unknown fragments here.
      */
     override fun isValidFragment(fragmentName: String): Boolean {
-        return (PreferenceFragment::class.java.getName() == fragmentName
-                || GeneralPreferenceFragment::class.java.getName() == fragmentName
-                || DataSyncPreferenceFragment::class.java.getName() == fragmentName
-                || NotificationPreferenceFragment::class.java.getName() == fragmentName)
+        return (PreferenceFragment::class.java.name == fragmentName
+                || GeneralPreferenceFragment::class.java.name == fragmentName
+                || DataSyncPreferenceFragment::class.java.name == fragmentName
+                || NotificationPreferenceFragment::class.java.name == fragmentName)
     }
 
     /**

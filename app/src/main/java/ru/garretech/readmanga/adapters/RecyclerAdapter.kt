@@ -1,5 +1,8 @@
 package ru.garretech.readmanga.adapters
 
+import android.widget.ImageView
+import com.bumptech.glide.Glide
+import com.bumptech.glide.load.resource.drawable.DrawableTransitionOptions
 import com.chad.library.adapter.base.BaseQuickAdapter
 import com.chad.library.adapter.base.BaseViewHolder
 
@@ -37,6 +40,15 @@ class RecyclerAdapter(layoutResId: Int, data: List<Manga>?) : BaseQuickAdapter<M
 
     override fun convert(helper: BaseViewHolder, item: Manga) {
         helper.setText(R.id.mangaTitle, item.title)
-        helper.setImageBitmap(R.id.mangaPhoto, item.image)
+        val imageView = helper.itemView.findViewById<ImageView>(R.id.mangaPhoto)
+
+
+        Glide
+            .with(helper.itemView.context!!)
+            .load(item.mangaImageURL)
+            .transition(DrawableTransitionOptions.withCrossFade())
+            .fitCenter()
+            //.placeholder(R.drawable.loading_spinner)
+            .into(imageView)
     }
 }

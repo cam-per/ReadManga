@@ -105,12 +105,12 @@ class MangaSourcesFragment : androidx.fragment.app.Fragment(), OnExpandableItemC
         }
     }
 
-    override fun onAttach(context: Context?) {
+    override fun onAttach(context: Context) {
         super.onAttach(context)
         if (context is OnFragmentInteractionListener) {
             mListener = context
         } else {
-            throw RuntimeException(context!!.toString() + " must implement OnFragmentInteractionListener")
+            throw RuntimeException(context.toString() + " must implement OnFragmentInteractionListener")
         }
     }
 
@@ -133,7 +133,7 @@ class MangaSourcesFragment : androidx.fragment.app.Fragment(), OnExpandableItemC
 
     internal fun hasConnection(): Boolean {
         val cm = activity!!.getSystemService(Context.CONNECTIVITY_SERVICE) as ConnectivityManager
-        val ni = cm.getActiveNetworkInfo()
+        val ni = cm.activeNetworkInfo
         return ni != null && ni.isConnected
     }
 

@@ -95,7 +95,7 @@ class SiteWorker {
                         list?.addAll(resultArray)
 
                         currentOffset += (result["offset"] as Int?)!!
-                        Observable.fromArray(resultArray!!)
+                        Observable.fromArray(resultArray)
                     }
 
                     SEARCH_QUERY -> {
@@ -121,7 +121,7 @@ class SiteWorker {
                         list?.addAll(resultArray)
 
                         currentOffset += (result["offset"] as Int?)!!
-                        Observable.fromArray(resultArray!!)
+                        Observable.fromArray(resultArray)
                     }
 
                     EDITOR_CHOICE_QUERY -> {
@@ -230,7 +230,7 @@ class SiteWorker {
             val pageContent: Document
             val movieList = ArrayList<Manga>()
             pageContent = pageDownloader.execute(SITE_URL).get()
-            var imageDownloader: ImageDownloader
+            //var imageDownloader: ImageDownloader
             var movie: Manga
 
             val tempElements = pageContent.getElementsByClass(editorChoice)
@@ -250,7 +250,7 @@ class SiteWorker {
                     imageURL = element1.getElementsByTag("img")[0].attr("data-original")
                     movie = Manga(title, ArrayList(Arrays.asList(*genres.split(", ".toRegex()).dropLastWhile({ it.isEmpty() }).toTypedArray())), imageURL, url)
 
-                    var image: Bitmap? = null
+                    /*var image: Bitmap? = null
                     try {
                         image = getCachedImage(context!!, imageURL)
                         Log.d("STATUS: ", "$imageURL found")
@@ -273,7 +273,7 @@ class SiteWorker {
                         e.printStackTrace()
                     }
 
-                    movie.image = image
+                    movie.image = image*/
                     movieList.add(movie)
                 }
             }
@@ -617,7 +617,7 @@ class SiteWorker {
             val mangaList = ArrayList<Manga>()
             val result = HashMap<String, Any>()
             val elements = pageContent.getElementsByClass("tile col-sm-6 ")
-            var imageDownloader: ImageDownloader
+            //var imageDownloader: ImageDownloader
             var manga: Manga
             var iteration = 0
             for (element in elements) {
@@ -649,7 +649,7 @@ class SiteWorker {
 
                     manga = Manga(title, ArrayList(Arrays.asList(*genres.split(", ".toRegex()).dropLastWhile({ it.isEmpty() }).toTypedArray())), imageURL, url)
 
-                    var image: Bitmap? = null
+                  /*  var image: Bitmap? = null
                     try {
                         image = getCachedImage(context!!, imageURL)
                         Log.d("STATUS: ", "$imageURL found")
@@ -672,7 +672,7 @@ class SiteWorker {
                         e.printStackTrace()
                     }
 
-                    manga.image = image
+                    manga.image = image*/
                     mangaList.add(manga)
                 }
                 iteration++
