@@ -10,10 +10,14 @@
                                    app:cardBackgroundColor="#242424">
 
     <TextView
-            android:text="TextView"
+            android:id="@+id/chapterNameText"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            android:id="@+id/chapterNameText"
-            android:layout_weight="1" android:textSize="18sp" android:layout_margin="5dp"/>
+            android:layout_marginStart="10dp"
+            android:layout_marginTop="5dp"
+            android:layout_marginBottom="5dp"
+            android:layout_weight="1"
+            android:text="TextView"
+            android:textSize="18sp" />
 
 </androidx.cardview.widget.CardView>

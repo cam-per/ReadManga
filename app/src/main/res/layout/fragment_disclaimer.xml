@@ -22,12 +22,13 @@
             android:textSize="16sp" />
 
         <Button
-            android:id="@+id/dissmissDisclaimerButton"
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:layout_gravity="end"
-            android:background="@android:color/transparent"
-            android:text="Понятно" />
+                android:id="@+id/dissmissDisclaimerButton"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_gravity="end"
+                android:background="@android:color/transparent"
+                android:text="Понятно"
+                android:textColor="@android:color/white" />
     </LinearLayout>
 
 </FrameLayout>

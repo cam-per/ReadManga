@@ -6,6 +6,7 @@ import android.util.Log
 import java.util.ArrayList
 
 import io.reactivex.Observable
+import io.reactivex.Single
 import ru.garretech.readmanga.models.Favorites
 import ru.garretech.readmanga.models.Manga
 
@@ -42,9 +43,25 @@ class AppDataSource(context: Context) {
         mangaDAO.addMovie(manga)
     }
 
-    fun getMovie(URL: String): Manga {
-        return mangaDAO.getMovie(URL)
-    }
+    fun getMovie(URL: String) =
+        Single.create<Manga> {
+            val manga = mangaDAO.getMovie(URL)
+
+            if (manga != null)
+                it.onSuccess(manga)
+            else
+                it.onError(NullPointerException())
+        }
+
+    fun isInDatabase(url : String) =
+            Single.create<Boolean> {
+                val manga = mangaDAO.getMovie(url)
+
+                if (manga != null)
+                    it.onSuccess(true)
+                else
+                    it.onSuccess(false)
+            }
 
     fun isFavorite(URL: String): Boolean {
         val favorites = favoritesDAO.getFavoriteByURL(URL)

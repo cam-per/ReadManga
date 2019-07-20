@@ -7,7 +7,7 @@ import org.jsoup.nodes.Document
 
 import java.io.IOException
 
-class PageDownloader : AsyncTask<String, Void, Document>() {
+class PageDownloader : AsyncTask<String, Void, Document?>() {
 
     override fun doInBackground(vararg strings: String): Document? {
         var result: Document? = null

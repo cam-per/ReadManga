@@ -31,7 +31,7 @@ class ImageScrollAdapter(private val mContext : Context, private val mImageList:
     override fun instantiateItem(container: ViewGroup, position: Int): Any {
         synchronized(ImageScrollAdapter::class) {
 
-            //if (container.getChildAt(position) == null) {
+            if (container.getChildAt(position) == null) {
 
                 val imageView = BigImageView(mContext)
                 imageView.setFailureImage(getDrawable(mContext,R.drawable.broken_image))
@@ -57,9 +57,9 @@ class ImageScrollAdapter(private val mContext : Context, private val mImageList:
 
                 }
                 return container.getChildAt(position)
-           // } else {
-             //   return container.getChildAt(position)
-            //}
+            } else {
+                return container.getChildAt(position)
+            }
         }
     }
 

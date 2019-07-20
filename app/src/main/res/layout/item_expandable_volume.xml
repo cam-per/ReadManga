@@ -20,11 +20,21 @@
         <ImageView
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
-                app:srcCompat="@android:drawable/ic_input_get"/>
+                android:layout_gravity="center_vertical"
+                android:layout_marginStart="5dp"
+                android:layout_marginTop="5dp"
+                android:layout_marginBottom="5dp"
+                android:tint="@android:color/white"
+                app:srcCompat="@drawable/ic_bookmark" />
+
         <TextView
-                android:text="TextView"
+                android:id="@+id/volumeNameText"
                 android:layout_width="wrap_content"
-                android:layout_height="wrap_content" android:id="@+id/volumeNameText" android:layout_weight="1"
-                android:textSize="18sp" android:layout_margin="5dp"/>
+                android:layout_height="wrap_content"
+                android:layout_gravity="center_vertical"
+                android:layout_marginStart="10dp"
+                android:layout_weight="1"
+                android:text="TextView"
+                android:textSize="18sp" />
     </LinearLayout>
 </androidx.cardview.widget.CardView>

@@ -69,17 +69,8 @@ class MangaReaderActivity : AppCompatActivity(), OnViewPagerClickListener, PageP
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
-
-
-        /*
-        * Подгрузка в активность всех ссылок (или ссылок того же тома)
-        * При нажатии на переход на другую главу, пересоздается adapter с новыми данными
-        * mangaContentView инвалидирует данные
-        * Изменяется название тулбара на название главы
-        *
-        * */
-
         setContentView(R.layout.activity_manga_reader)
+
         setSupportActionBar(mangaReaderToolbar)
         supportActionBar?.setDisplayHomeAsUpEnabled(true)
 
@@ -87,11 +78,6 @@ class MangaReaderActivity : AppCompatActivity(), OnViewPagerClickListener, PageP
         //val chapterName = intent.getStringExtra("chapterName")
         selectedChapterIndex = intent.getIntExtra("selectedChapterIndex",0)
 
-        /*
-        * title :
-        * path :
-        *
-        * */
         val selectedChapter = chapterJsonArray[selectedChapterIndex] as JSONObject
         val chapterName = selectedChapter.getString("volumeNumber") + "-" +
                         selectedChapter.getString("chapterNumber")  + " " +

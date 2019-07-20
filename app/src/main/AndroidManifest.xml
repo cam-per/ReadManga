@@ -54,7 +54,7 @@
                     android:value="ru.garretech.readmanga.activities.MainActivity"/>
         </activity>
         <activity
-                android:name=".activities.MangaAboutActivity"
+                android:name=".activities.MangaInfoActivity"
                 android:label="@string/title_activity_movie_about"
                 android:parentActivityName=".activities.MainActivity">
             <meta-data

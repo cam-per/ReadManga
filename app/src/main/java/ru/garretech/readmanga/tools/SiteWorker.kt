@@ -86,16 +86,21 @@ class SiteWorker {
 
                         val pageContent = pageDownloader.execute(uriQuery!!.toString()).get()
 
-                        if (queryAmount == -1)
-                            queryAmount = getMaxQueryElementCount(pageContent)
+                        if (pageContent != null) {
 
-                        val result = mangaListContentParse(context, pageContent, limit)
+                            if (queryAmount == -1)
+                                queryAmount = getMaxQueryElementCount(pageContent)
 
-                        val resultArray = result["list"] as List<Manga>
-                        list?.addAll(resultArray)
+                            val result = mangaListContentParse(context, pageContent, limit)
 
-                        currentOffset += (result["offset"] as Int?)!!
-                        Observable.fromArray(resultArray)
+                            val resultArray = result["list"] as List<Manga>
+                            list?.addAll(resultArray)
+
+                            currentOffset += (result["offset"] as Int?)!!
+                            Observable.fromArray(resultArray)
+                        }
+                        else
+                            Observable.fromArray(emptyList())
                     }
 
                     SEARCH_QUERY -> {
@@ -227,11 +232,13 @@ class SiteWorker {
         @Throws(InterruptedException::class, ExecutionException::class, NullPointerException::class,IOException::class, FileNotFoundException::class)
         fun getEditorChoiceMangasList(context: Context?): List<Manga> {
             val pageDownloader = PageDownloader()
-            val pageContent: Document
+            val pageContent: Document?
             val movieList = ArrayList<Manga>()
             pageContent = pageDownloader.execute(SITE_URL).get()
-            //var imageDownloader: ImageDownloader
             var movie: Manga
+
+            if (pageContent == null)
+                return emptyList()
 
             val tempElements = pageContent.getElementsByClass(editorChoice)
             if (tempElements == null)
@@ -250,30 +257,6 @@ class SiteWorker {
                     imageURL = element1.getElementsByTag("img")[0].attr("data-original")
                     movie = Manga(title, ArrayList(Arrays.asList(*genres.split(", ".toRegex()).dropLastWhile({ it.isEmpty() }).toTypedArray())), imageURL, url)
 
-                    /*var image: Bitmap? = null
-                    try {
-                        image = getCachedImage(context!!, imageURL)
-                        Log.d("STATUS: ", "$imageURL found")
-                    } catch (e: FileNotFoundException) {
-                        try {
-                            imageDownloader = ImageDownloader()
-                            image = imageDownloader.execute(imageURL).get()
-                            saveImage(context!!, image!!, imageURL)
-                        } catch (e1: ExecutionException) {
-                            e.printStackTrace()
-                        } catch (e1: InterruptedException) {
-                            e.printStackTrace()
-                        } catch (e1: FileNotFoundException) {
-                            e1.printStackTrace()
-                        } catch (e1: IOException) {
-                            e1.printStackTrace()
-                        }
-
-                    } catch (e: IOException) {
-                        e.printStackTrace()
-                    }
-
-                    movie.image = image*/
                     movieList.add(movie)
                 }
             }
@@ -284,21 +267,23 @@ class SiteWorker {
         val genresList: JSONArray
             @Throws(InterruptedException::class, ExecutionException::class, JSONException::class, NullPointerException::class)
             get() {
-
-
                 val genresList = JSONArray()
                 val URL_PREFIX = "/list/genres/sort_name"
                 val pageDownloader = PageDownloader()
-                val pageContent: Document
+                val pageContent: Document?
 
                 pageContent = pageDownloader.execute(SITE_URL + URL_PREFIX).get()
+
+                if (pageContent == null)
+                    return genresList
 
                 var element = pageContent.getElementsByClass("table table-hover").first()
                 element = element.getElementsByTag("tbody").first()
                 val elements = element.getElementsByTag("tr")
                 var index = 0
                 for (element1 in elements) {
-                    val tempElement = element1.getElementsByTag("td").first().getElementsByTag("a").first()
+                    val tempElement =
+                        element1.getElementsByTag("td").first().getElementsByTag("a").first()
                     val jsonObject = JSONObject()
                     val genreName = tempElement.text()
                     var genreLink = tempElement.attr("href")
@@ -308,6 +293,7 @@ class SiteWorker {
                     genresList.put(index, jsonObject)
                     index++
                 }
+
                 return genresList
             }
 
@@ -324,7 +310,7 @@ class SiteWorker {
             var matcher : Matcher?
             var resultAmount = ""
             val pageDownloader = PageDownloader()
-            val pageContent: Document
+            val pageContent: Document?
             val jsonArray by lazy {
                 if (resultAmount.isNotEmpty())
                     JSONArray(resultAmount)
@@ -332,6 +318,9 @@ class SiteWorker {
                     JSONArray()}
 
             pageContent = pageDownloader.execute(SITE_URL + link).get()
+
+            if (pageContent == null)
+                return jsonArray
 
             matcher = pattern.matcher(pageContent.toString())
 
@@ -380,8 +369,9 @@ class SiteWorker {
             return elements.size
         }
 
-        @Throws(InterruptedException::class, ExecutionException::class, JSONException::class, NullPointerException::class)
-        fun getMangaInfo(URL: String): JSONObject {
+        //@Throws(InterruptedException::class, ExecutionException::class, JSONException::class, NullPointerException::class)
+        fun getMangaInfo(URL: String) =
+        Single.create<Manga> {
             val info = JSONObject()
             val pageDownloader = PageDownloader()
             val pageContent: Document?
@@ -458,18 +448,16 @@ class SiteWorker {
             val duration = tempElement!!.text()
 
 
-            info.put("title", "$name | $eng_name | $original_name")
-            info.put("url", url)
-            info.put("genres", genres.toString())
-            info.put("image_url", image_url)
-            info.put("last_chapter", lastChapter)
-            info.put("production", production)
-            info.put("chapters_number", chaptersNumber)
-            info.put("duration", duration)
-            info.put("description", description)
-            info.put("age", age)
+            val manga = Manga("$name | $eng_name | $original_name",genres.split(", "),image_url,url).also {
+                it.lastChapter = lastChapter
+                it.productionCountry = production
+                it.chaptersNumber = chaptersNumber
+                it.duration = duration
+                it.description = description
+                it.productionYear = age
+            }
 
-            return info
+            it.onSuccess(manga)
         }
 
         @Throws(NullPointerException::class)
@@ -499,17 +487,14 @@ class SiteWorker {
             * translatedValues = { , , }
             * */
 
-            var pageDownloader: PageDownloader
-            var pageContent: Document
+            var pageDownloader = PageDownloader()
+            var pageContent: Document?
             var sortingContent : Element
             var tempElements : Elements
             val firstParamPattern = Pattern.compile("\\?(\\w+)=(\\w+)")
             val secondParamPattern = Pattern.compile("\\&(\\w+)=(\\w+)")
             val prefixPattern = Pattern.compile("\\/(\\w+)\\/(\\w+)\\?")
 
-
-
-            pageDownloader = PageDownloader()
             pageContent = pageDownloader.execute(uri.toString()).get()
 
             if (pageContent == null) {
@@ -693,16 +678,22 @@ class SiteWorker {
                 val ADULT_PREFIX = "?mtr=1"
                 val adapterList: ArrayList<MultiItemEntity> = ArrayList<MultiItemEntity>()
                 val pageDownloader = PageDownloader()
-                val pageContent: Document
+                val pageContent: Document?
+                var doesntHaveNumberInTitle = false
+
                 try {
                     if (lastChapter == "/") {
                         it.onSuccess(resultingMap)
                     }
 
                     pageContent = pageDownloader.execute(SITE_URL + URL + lastChapter + ADULT_PREFIX).get()
-                    val element = pageContent.getElementById("chapterSelectorSelect")
-                    var elements = element.getElementsByTag("option")
-                    elements.reverse()
+
+                    if (pageContent == null)
+                        it.onError(NullPointerException())
+
+                    val element = pageContent?.getElementById("chapterSelectorSelect")
+                    var elements = element?.getElementsByTag("option")
+                    elements!!.reverse()
 
                     var index = 0
                     var volumeIndex = 0
@@ -711,48 +702,59 @@ class SiteWorker {
                     for (element1 in elements) {
                         var matcher = pattern.matcher(element1.text())
 
-                        if (matcher.find()) {
-                            val currentVolumeNumber = (matcher.group(1) ?: "0").toInt()
+                    var currentVolumeNumber : Int
 
-                            if (volumeIndex != currentVolumeNumber) {
-                                if (currentVolume != null && volumeIndex != 0)
-                                    adapterList.add(currentVolume)
-
-                                currentVolume = Volume(currentVolumeNumber)
-                                volumeIndex = currentVolumeNumber
-                            }
-
-
-                            val chapterNumber = index
-                            var link = element1.attr("value")
-                            link = link.substring(URL.length)
-
-                            matcher = pattern.matcher(element1.text())
-
-                            var chapterName = element1.text().substring(element1.text().lastIndexOf("- ") + 3)
-                            chapterName = chapterName.substring(chapterName.indexOf(" ") + 1)
-
-                            /*if (matcher.find())
-                                chapterName = matcher.group(1)
-                            else
-                                chapterName = element1.text()*/
-
-                            var currentChapter = Chapter(chapterName, chapterNumber, currentVolumeNumber, link)
-
-                            currentVolume?.addSubItem(currentChapter)
-
-                            val jsonObject = JSONObject()
-
-                            jsonObject.put("chapterName", chapterName)
-                            jsonObject.put("chapterNumber", chapterNumber)
-                            jsonObject.put("volumeNumber", currentVolumeNumber)
-                            jsonObject.put("link", link)
-                            chaptersList.put(index, jsonObject)
-                            index++
-                        }
+                    doesntHaveNumberInTitle = false
+                    if (matcher.find()) {
+                        currentVolumeNumber = (matcher.group(1) ?: "0").toInt()
+                    } else {
+                        doesntHaveNumberInTitle = true
+                        currentVolumeNumber = 1
                     }
-                    if (currentVolume != null && volumeIndex != 0)
-                        adapterList.add(currentVolume)
+
+                    if (volumeIndex != currentVolumeNumber) {
+                        if (currentVolume != null && volumeIndex != 0)
+                            adapterList.add(currentVolume)
+
+                        currentVolume = Volume(currentVolumeNumber)
+                        volumeIndex = currentVolumeNumber
+                    }
+
+
+                    val chapterNumber = index + 1
+                    var link = element1.attr("value")
+                    link = link.substring(URL.length)
+
+                    matcher = pattern.matcher(element1.text())
+
+                    var chapterName : String
+                    if (doesntHaveNumberInTitle)
+                        chapterName = element1.text()
+                    else {
+                        chapterName = element1.text().substring(element1.text().lastIndexOf("- ") + 3)
+                        chapterName = chapterName.substring(chapterName.indexOf(" ") + 1)
+                    }
+
+                    /*if (matcher.find())
+                        chapterName = matcher.group(1)
+                    else
+                        chapterName = element1.text()*/
+
+                    var currentChapter = Chapter(chapterName, chapterNumber, currentVolumeNumber, link)
+
+                    currentVolume?.addSubItem(currentChapter)
+
+                    val jsonObject = JSONObject()
+
+                    jsonObject.put("chapterName", chapterName)
+                    jsonObject.put("chapterNumber", chapterNumber)
+                    jsonObject.put("volumeNumber", currentVolumeNumber)
+                    jsonObject.put("link", link)
+                    chaptersList.put(index, jsonObject)
+                    index++
+                }
+                if (currentVolume != null && volumeIndex != 0)
+                    adapterList.add(currentVolume)
 
                 } catch (e: InterruptedException) {
                     e.printStackTrace()

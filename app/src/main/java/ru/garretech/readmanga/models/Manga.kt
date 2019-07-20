@@ -38,4 +38,6 @@ var genres: List<String>?, @field:ColumnInfo(name = "manga_image_url")
     @ColumnInfo(name = "initial_episode")
     var lastChapter: String? = null
 
+
+
 }

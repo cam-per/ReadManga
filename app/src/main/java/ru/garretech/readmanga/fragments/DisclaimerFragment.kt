@@ -7,6 +7,7 @@ import androidx.fragment.app.Fragment
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
+import android.view.Window
 import android.widget.Button
 import androidx.fragment.app.DialogFragment
 
@@ -22,6 +23,8 @@ class DisclaimerFragment : DialogFragment() {
         // Inflate the layout for this fragment
         val view = inflater.inflate(R.layout.fragment_disclaimer, container, false)
         val button = view.findViewById<Button>(R.id.dissmissDisclaimerButton)
+
+        dialog?.window?.requestFeature(Window.FEATURE_NO_TITLE)
 
         button.setOnClickListener { dismiss() }
         return view

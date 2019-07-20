@@ -28,6 +28,7 @@ import ru.garretech.readmanga.activities.MangaReaderActivity
 import ru.garretech.readmanga.adapters.ExpandableItemAdapter
 import ru.garretech.readmanga.interfaces.OnExpandableItemClickListener
 import ru.garretech.readmanga.models.Chapter
+import ru.garretech.readmanga.models.Manga
 
 import ru.garretech.readmanga.tools.SiteWorker
 
@@ -35,14 +36,13 @@ import ru.garretech.readmanga.tools.SiteWorker
 class MangaSourcesFragment : androidx.fragment.app.Fragment(), OnExpandableItemClickListener {
 
     private lateinit var newArrayAdapter : ExpandableItemAdapter
-    internal lateinit var adapterList : List<MultiItemEntity>
-    internal lateinit var chapterJsonArray : JSONArray
-    internal lateinit var recyclerView: RecyclerView
-    internal lateinit var sourcesInfo: JSONObject
-    internal lateinit var URL: String
-    internal lateinit var progressBottomSheet: ProgressBottomSheet
-    internal lateinit var lastChapter: String
-    internal lateinit var sourcesProgress : ProgressBar
+    private lateinit var adapterList : List<MultiItemEntity>
+    private lateinit var chapterJsonArray : JSONArray
+    private lateinit var recyclerView: RecyclerView
+    lateinit var currentManga : Manga
+
+    private lateinit var progressBottomSheet: ProgressBottomSheet
+    private lateinit var sourcesProgress : ProgressBar
 
     /*  * Переходим по ссылке http://readmanga.me/tower_of_god/vol3/6
     * Считываем количество страниц из элемента с классом pages-count
@@ -54,18 +54,11 @@ class MangaSourcesFragment : androidx.fragment.app.Fragment(), OnExpandableItemC
 
     private var bag : CompositeDisposable = CompositeDisposable()
 
-    private var mListener: OnFragmentInteractionListener? = null
-
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
-        if (arguments != null) {
-            progressBottomSheet = ProgressBottomSheet()
-            sourcesInfo = JSONObject(arguments!!.getString(ARG_PARAM1))
-            URL = sourcesInfo.getString("url")
-            lastChapter = sourcesInfo.getString("last_chapter")
 
-        }
+        progressBottomSheet = ProgressBottomSheet()
     }
 
     override fun onCreateView(inflater: LayoutInflater, container: ViewGroup?, savedInstanceState: Bundle?): View? {
@@ -75,7 +68,11 @@ class MangaSourcesFragment : androidx.fragment.app.Fragment(), OnExpandableItemC
         sourcesProgress  = view.findViewById(R.id.sourcesProgress)
 
         showProgressBar()
-        bag.add(SiteWorker.formChaptersList(URL, lastChapter).subscribeOn(Schedulers.io()).observeOn(AndroidSchedulers.mainThread())
+
+
+        bag.add(SiteWorker.formChaptersList(currentManga.url, currentManga.lastChapter!!)
+            .subscribeOn(Schedulers.io())
+            .observeOn(AndroidSchedulers.mainThread())
             .subscribe( { map ->
                 adapterList = map["adapterList"] as List<MultiItemEntity>
                 chapterJsonArray = map["chapterJsonArray"] as JSONArray
@@ -86,7 +83,7 @@ class MangaSourcesFragment : androidx.fragment.app.Fragment(), OnExpandableItemC
                 recyclerView.adapter = newArrayAdapter
                 dismissProgressBar()
             },{
-                Log.d("Chapter observer","Error getting chapter list")
+                Log.e("Chapter observer","Error getting chapter list",it)
             }))
 
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.LOLLIPOP) {
@@ -96,33 +93,6 @@ class MangaSourcesFragment : androidx.fragment.app.Fragment(), OnExpandableItemC
         }
 
         return view
-    }
-
-
-    fun onButtonPressed(uri: Uri) {
-        if (mListener != null) {
-            mListener!!.onFragmentInteraction(uri)
-        }
-    }
-
-    override fun onAttach(context: Context) {
-        super.onAttach(context)
-        if (context is OnFragmentInteractionListener) {
-            mListener = context
-        } else {
-            throw RuntimeException(context.toString() + " must implement OnFragmentInteractionListener")
-        }
-    }
-
-    override fun onDetach() {
-        super.onDetach()
-        mListener = null
-    }
-
-
-    interface OnFragmentInteractionListener {
-        // TODO: Update argument type and chapterName
-        fun onFragmentInteraction(uri: Uri)
     }
 
     internal fun showConnectionError() {
@@ -150,7 +120,7 @@ class MangaSourcesFragment : androidx.fragment.app.Fragment(), OnExpandableItemC
         val intent = Intent(activity,MangaReaderActivity::class.java)
         intent.putExtra("selectedChapterIndex",item.chapterNumber)
         intent.putExtra("chapterArray",chapterJsonArray.toString())
-        intent.putExtra("mangaURL",URL)
+        intent.putExtra("mangaURL",currentManga.url)
 
         startActivity(intent)
 
@@ -165,18 +135,9 @@ class MangaSourcesFragment : androidx.fragment.app.Fragment(), OnExpandableItemC
     }
 
     companion object {
-        // TODO: Rename parameter arguments, choose names that match
-        // the fragment initialization parameters, e.g. ARG_ITEM_NUMBER
-        private val ARG_PARAM1 = "info"
 
-
-        // TODO: Rename and change types and number of parameters
-        fun newInstance(sourcesInfo: JSONObject): MangaSourcesFragment {
-            val fragment = MangaSourcesFragment()
-            val args = Bundle()
-            args.putString(ARG_PARAM1, sourcesInfo.toString())
-            fragment.arguments = args
-            return fragment
+        fun newInstance(manga: Manga) = MangaSourcesFragment().also {
+            it.currentManga = manga
         }
     }
 

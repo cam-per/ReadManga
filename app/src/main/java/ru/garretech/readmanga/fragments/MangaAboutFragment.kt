@@ -10,6 +10,7 @@ import android.view.View
 import android.view.ViewGroup
 import android.widget.ImageView
 import android.widget.TextView
+import androidx.lifecycle.ViewModelProviders
 import com.bumptech.glide.Glide
 import com.bumptech.glide.load.resource.drawable.DrawableTransitionOptions
 
@@ -17,51 +18,22 @@ import com.bumptech.glide.load.resource.drawable.DrawableTransitionOptions
 import org.json.JSONException
 import org.json.JSONObject
 import ru.garretech.readmanga.R
-
-
+import ru.garretech.readmanga.models.Manga
+import ru.garretech.readmanga.viewmodels.MangaAboutFragmentViewModel
+import java.lang.StringBuilder
 
 
 class MangaAboutFragment : androidx.fragment.app.Fragment() {
 
 
-    private val mangaAge: String by lazy { arguments!!.getString(ARG_PARAM6)}
-    private val mangaTitle: String by lazy { arguments!!.getString(ARG_PARAM1) }
-    private val mangaGenres: String by lazy { arguments!!.getString(ARG_PARAM2) }
-    private val mangaProduction: String by lazy { arguments!!.getString(ARG_PARAM3) }
-    private val mangaSeriesNumber: String by lazy { arguments!!.getString(ARG_PARAM4) }
-    private val mangaDuration: String by lazy { arguments!!.getString(ARG_PARAM5) }
-    private val mangaDescription: String by lazy { arguments!!.getString(ARG_PARAM7) }
-    private val mangaImageURL: String by lazy { arguments!!.getString(ARG_PARAM8) }
-    private val mangaURL: String by lazy { arguments!!.getString(ARG_PARAM9) }
-    private var image: Bitmap? = null
-
-
-    private var mListener: OnFragmentInteractionListener? = null
+    private var currentManga: Manga? = null
+    private lateinit var viewModel : MangaAboutFragmentViewModel
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
-        if (arguments != null) {
+        viewModel = ViewModelProviders.of(this).get(MangaAboutFragmentViewModel::class.java)
 
-           /* try {
-                image = SiteWorker.getCachedImage(context!!, mangaImageURL)
-            } catch (e: FileNotFoundException) {
-                val imageDownloader = ImageDownloader()
-                try {
-                    image = imageDownloader.execute(mangaImageURL).get()
-                } catch (e1: ExecutionException) {
-                    e1.printStackTrace()
-                } catch (e1: InterruptedException) {
-                    e1.printStackTrace()
-                }
-
-            } catch (e: IOException) {
-                e.printStackTrace()
-            }*/
-
-
-
-
-        }
+        viewModel.currentManga = currentManga
     }
 
     override fun onCreateView(inflater: LayoutInflater, container: ViewGroup?,
@@ -76,17 +48,24 @@ class MangaAboutFragment : androidx.fragment.app.Fragment() {
         val imageView = view.findViewById<ImageView>(R.id.movie_image_about)
         val mangaDescriptionView = view.findViewById<TextView>(R.id.movie_description_text)
 
-        mangaGenresView.text = getString(R.string.genres_description) + " " + mangaGenres
-        mangaProductionCountryView.text = getString(R.string.production_country_description)  + " " + mangaProduction
-        mangaChaptersNumberView.text = mangaSeriesNumber
-        mangaDurationView.text = mangaDuration
-        mangaAgeView.text = getString(R.string.age_description)  + " " + mangaAge
-        mangaDescriptionView.text = mangaDescription
-        //imageView.setImageBitmap(image)
+        var genresString = StringBuilder()
+
+        for (genre in viewModel.currentManga?.genres!!)
+            genresString.append("$genre, ")
+
+
+
+
+        mangaGenresView.text = getString(R.string.genres_description) + " " + genresString.substring(0,genresString.length - 2)
+        mangaProductionCountryView.text = getString(R.string.production_country_description)  + " " + viewModel.currentManga?.productionCountry
+        mangaChaptersNumberView.text = viewModel.currentManga?.chaptersNumber
+        mangaDurationView.text = viewModel.currentManga?.duration
+        mangaAgeView.text = getString(R.string.age_description)  + " " + viewModel.currentManga?.productionYear
+        mangaDescriptionView.text = viewModel.currentManga?.description
 
         Glide
             .with(context!!)
-            .load(mangaImageURL)
+            .load(viewModel.currentManga?.mangaImageURL!!)
             .fitCenter()
             .transition(DrawableTransitionOptions.withCrossFade())
             //.placeholder(R.drawable.loading_spinner)
@@ -95,80 +74,12 @@ class MangaAboutFragment : androidx.fragment.app.Fragment() {
         return view
     }
 
-    // TODO: Rename method, update argument and hook method into UI event
-    fun onButtonPressed(uri: Uri) {
-        if (mListener != null) {
-            mListener!!.onFragmentInteraction(uri)
-        }
-    }
-
-    override fun onAttach(context: Context) {
-        super.onAttach(context)
-        if (context is OnFragmentInteractionListener) {
-            mListener = context
-        } else {
-            throw RuntimeException("$context must implement OnFragmentInteractionListener")
-        }
-    }
-
-    override fun onDetach() {
-        super.onDetach()
-        mListener = null
-    }
-
-
-    /**
-     * This interface must be implemented by activities that contain this
-     * fragment to allow an interaction in this fragment to be communicated
-     * to the activity and potentially other fragments contained in that
-     * activity.
-     *
-     *
-     * See the Android Training lesson [Communicating with Other Fragments](http://developer.android.com/training/basics/fragments/communicating.html) for more information.
-     */
-    interface OnFragmentInteractionListener {
-        // TODO: Update argument type and chapterName
-        fun onFragmentInteraction(uri: Uri)
-    }
 
     companion object {
-        // TODO: Rename parameter arguments, choose names that match
-        // the fragment initialization parameters, e.g. ARG_ITEM_NUMBER
-        private val ARG_PARAM1 = "title"
-        private val ARG_PARAM2 = "genres"
-        private val ARG_PARAM3 = "production"
-        private val ARG_PARAM4 = "chaptes_number"
-        private val ARG_PARAM5 = "duration"
-        private val ARG_PARAM6 = "age"
-        private val ARG_PARAM7 = "description"
-        private val ARG_PARAM8 = "imageURL"
-        private val ARG_PARAM9 = "url"
 
-
-        private val AGE = "Год: "
-        private val GENRES = "Жанры: "
-        private val PRODUCTION_COUNTRY = "Производство: "
-
-
-        // TODO: Rename and change types and number of parameters
         @Throws(JSONException::class)
-        fun newInstance(movieInfo: JSONObject): MangaAboutFragment {
-            val fragment = MangaAboutFragment()
-            val args = Bundle()
-
-            args.putString(ARG_PARAM1, movieInfo.getString("title"))
-            args.putString(ARG_PARAM2, movieInfo.getString("genres"))
-            args.putString(ARG_PARAM3, movieInfo.getString("production"))
-            args.putString(ARG_PARAM4, movieInfo.getString("chapters_number"))
-            args.putString(ARG_PARAM5, movieInfo.getString("duration"))
-            args.putString(ARG_PARAM6, movieInfo.getString("age"))
-            args.putString(ARG_PARAM7, movieInfo.getString("description"))
-            args.putString(ARG_PARAM8, movieInfo.getString("image_url"))
-            args.putString(ARG_PARAM9, movieInfo.getString("url"))
-
-            fragment.arguments = args
-
-            return fragment
+        fun newInstance(manga: Manga) = MangaAboutFragment().also {
+            it.currentManga = manga
         }
     }
 }
